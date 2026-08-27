@@ -2,16 +2,29 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 
 export default function Navbar() {
+  const pathname = usePathname();
+
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    checkUser();
-  }, []);
+  // =========================================
+  // CHECK CURRENT USER
+  // =========================================
 
-  // Check who is currently logged in
+  useEffect(() => {
+    // Admin pages have their own sidebar/navbar
+    // so there is no need to check the user here.
+    if (pathname.startsWith("/admin")) {
+      setLoading(false);
+      return;
+    }
+
+    checkUser();
+  }, [pathname]);
+
   async function checkUser() {
     try {
       const response = await fetch("/api/auth/me");
@@ -40,7 +53,10 @@ export default function Navbar() {
     }
   }
 
-  // Logout
+  // =========================================
+  // LOGOUT
+  // =========================================
+
   async function handleLogout() {
     try {
       const response = await fetch(
@@ -50,10 +66,9 @@ export default function Navbar() {
         }
       );
 
-      // Don't try response.json() if the server
-      // returned an error or empty response.
       if (!response.ok) {
-        const errorText = await response.text();
+        const errorText =
+          await response.text();
 
         console.error(
           "Logout API error:",
@@ -63,17 +78,17 @@ export default function Navbar() {
         return;
       }
 
-      const data = await response.json();
+      const data =
+        await response.json();
 
       if (data.success) {
-        // Remove user from Navbar immediately
+        // Remove user immediately
         setUser(null);
 
-        // Send both admin and normal users
-        // to the general login page.
-        window.location.href = "/login";
+        // Go to login page
+        window.location.href =
+          "/login";
       }
-
     } catch (error) {
       console.error(
         "Logout error:",
@@ -82,12 +97,27 @@ export default function Navbar() {
     }
   }
 
+  // =========================================
+  // HIDE CUSTOMER NAVBAR ON ADMIN PAGES
+  // =========================================
+
+  if (pathname.startsWith("/admin")) {
+    return null;
+  }
+
+  // =========================================
+  // NAVBAR
+  // =========================================
+
   return (
     <header className="navbar">
 
       <div className="navbar-container">
 
-        {/* Logo */}
+        {/* =================================
+            LOGO
+        ================================= */}
+
         <Link
           href="/"
           className="logo"
@@ -95,19 +125,25 @@ export default function Navbar() {
           GlowCare
         </Link>
 
-        {/* Navigation Links */}
+
+        {/* =================================
+            NAVIGATION LINKS
+        ================================= */}
+
         <nav className="nav-links">
 
           {user?.role === "admin" ? (
             <>
-              {/* Admin Navigation */}
+              {/* Admin user */}
+
               <Link href="/admin">
                 Dashboard
               </Link>
             </>
           ) : (
             <>
-              {/* User Navigation */}
+              {/* Normal user */}
+
               <Link href="/">
                 Home
               </Link>
@@ -124,15 +160,26 @@ export default function Navbar() {
 
         </nav>
 
-        {/* Actions */}
+
+        {/* =================================
+            ACTIONS
+        ================================= */}
+
         <div className="nav-actions">
 
-          {/* Search + Cart
-              Only visible to normal users */}
+          {/* =================================
+              SEARCH + WISHLIST + CART
+
+              Only for normal users
+          ================================= */}
+
           {user?.role !== "admin" && (
             <>
+
               {/* Search */}
+
               <button
+                type="button"
                 className="icon-button"
                 aria-label="Search"
               >
@@ -143,6 +190,8 @@ export default function Navbar() {
                   fill="none"
                   stroke="currentColor"
                   strokeWidth="1.8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
                 >
                   <circle
                     cx="11"
@@ -154,7 +203,9 @@ export default function Navbar() {
                 </svg>
               </button>
 
+
               {/* Wishlist */}
+
               <Link
                 href="/wishlist"
                 className="icon-button"
@@ -167,6 +218,8 @@ export default function Navbar() {
                   fill="none"
                   stroke="currentColor"
                   strokeWidth="1.8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
                 >
                   <path
                     d="M20.8 8.7c0 5.5-8.8 10.3-8.8 10.3S3.2 14.2 3.2 8.7C3.2 5.8 5.3 4 7.8 4c1.6 0 3.1.8 4.2 2.1C13.1 4.8 14.6 4 16.2 4c2.5 0 4.6 1.8 4.6 4.7Z"
@@ -174,7 +227,9 @@ export default function Navbar() {
                 </svg>
               </Link>
 
+
               {/* Cart */}
+
               <Link
                 href="/cart"
                 className="icon-button"
@@ -187,8 +242,12 @@ export default function Navbar() {
                   fill="none"
                   stroke="currentColor"
                   strokeWidth="1.8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
                 >
-                  <path d="M3 4h2l2.4 11.2a2 2 0 0 0 2 1.6h7.8a2 2 0 0 0 1.9-1.4L21 8H6" />
+                  <path
+                    d="M3 4h2l2.4 11.2a2 2 0 0 0 2 1.6h7.8a2 2 0 0 0 1.9-1.4L21 8H6"
+                  />
 
                   <circle
                     cx="10"
@@ -203,19 +262,29 @@ export default function Navbar() {
                   />
                 </svg>
               </Link>
+
             </>
           )}
 
-          {/* Authentication */}
+
+          {/* =================================
+              AUTHENTICATION
+          ================================= */}
+
           {!loading && (
             user ? (
               <>
+
                 {/* Logged-in user */}
+
                 <span className="navbar-user">
                   {user.role === "admin"
                     ? "Admin"
                     : `Hi, ${user.name}`}
                 </span>
+
+
+                {/* Logout */}
 
                 <button
                   type="button"
@@ -224,15 +293,19 @@ export default function Navbar() {
                 >
                   Logout
                 </button>
+
               </>
             ) : (
+
               /* Logged-out user */
+
               <Link
                 href="/login"
                 className="login-button"
               >
                 Login
               </Link>
+
             )
           )}
 

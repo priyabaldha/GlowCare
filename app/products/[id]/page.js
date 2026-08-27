@@ -3,10 +3,12 @@
 import { use, useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useCart } from "../../../context/CartContext";
 
 export default function ProductDetailsPage({ params }) {
     const { id } = use(params);
 
+    const { fetchCart } = useCart();
     const [quantity, setQuantity] = useState(1);
     const [product, setProduct] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -117,7 +119,7 @@ export default function ProductDetailsPage({ params }) {
 
                 alert(
                     data.message ||
-                        "Please login first."
+                    "Please login first."
                 );
             }
         } catch (error) {
@@ -175,13 +177,15 @@ export default function ProductDetailsPage({ params }) {
                 JSON.parse(responseText);
 
             if (data.success) {
+                await fetchCart();
+
                 setCartMessage(
                     "Added to your bag!"
                 );
             } else {
                 setCartMessage(
                     data.message ||
-                        "Failed to add product."
+                    "Failed to add product."
                 );
             }
         } catch (error) {
@@ -379,11 +383,10 @@ export default function ProductDetailsPage({ params }) {
                         {/* Wishlist */}
                         <button
                             type="button"
-                            className={`details-wishlist-button ${
-                                isWishlisted
+                            className={`details-wishlist-button ${isWishlisted
                                     ? "wishlist-active"
                                     : ""
-                            }`}
+                                }`}
                             onClick={handleWishlist}
                             disabled={wishlistLoading}
                             aria-label={

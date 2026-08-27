@@ -138,13 +138,25 @@ export default function CartPage() {
                         something your skin will love.
                     </p>
 
-                    <Link
-                        href="/products"
-                        className="primary-button"
-                    >
-                        Explore Products
-                        <span>→</span>
-                    </Link>
+                    <div className="cart-empty-actions">
+
+                        <Link
+                            href="/products"
+                            className="primary-button"
+                        >
+                            Explore Products
+                            <span>→</span>
+                        </Link>
+
+                        <Link
+                            href="/orders"
+                            className="cart-orders-link"
+                        >
+                            View My Orders
+                            <span>→</span>
+                        </Link>
+
+                    </div>
 
                 </section>
             </main>
@@ -321,12 +333,32 @@ export default function CartPage() {
                         <span>→</span>
                     </Link>
 
-                    <Link
-                        href="/products"
-                        className="continue-shopping"
-                    >
-                        Continue Shopping
-                    </Link>
+                    <div className="cart-summary-actions">
+
+                        <Link
+                            href="/checkout"
+                            className="checkout-button"
+                        >
+                            Proceed to Checkout
+                            <span>→</span>
+                        </Link>
+
+                        <Link
+                            href="/orders"
+                            className="cart-orders-link"
+                        >
+                            View My Orders
+                            <span>→</span>
+                        </Link>
+
+                        <Link
+                            href="/products"
+                            className="continue-shopping"
+                        >
+                            Continue Shopping
+                        </Link>
+
+                    </div>
 
                 </aside>
 
