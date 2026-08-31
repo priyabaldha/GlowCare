@@ -23,6 +23,17 @@ export default function AdminPage() {
     const [activeSection, setActiveSection] =
         useState("overview");
 
+        const [orders, setOrders] = useState([]);
+
+const [ordersLoading, setOrdersLoading] =
+    useState(false);
+
+const [selectedOrder, setSelectedOrder] =
+    useState(null);
+
+const [updatingOrder, setUpdatingOrder] =
+    useState(false);
+
     const [formData, setFormData] = useState({
         name: "",
         shortName: "",
@@ -39,8 +50,9 @@ export default function AdminPage() {
     // =========================================
 
     useEffect(() => {
-        fetchProducts();
-    }, []);
+    fetchProducts();
+    fetchOrders();
+}, []);
 
     async function fetchProducts() {
         try {
@@ -65,32 +77,154 @@ export default function AdminPage() {
     }
 
     // =========================================
-    // ADMIN LOGOUT
-    // =========================================
+// FETCH ADMIN ORDERS
+// =========================================
 
-    async function handleAdminLogout() {
-        try {
-            const response = await fetch(
-                "/api/admin/logout",
+async function fetchOrders() {
+    setOrdersLoading(true);
+
+    try {
+        const response =
+            await fetch(
+                "/api/admin/orders"
+            );
+
+        const data =
+            await response.json();
+
+        if (!response.ok) {
+            console.error(
+                data.message
+            );
+
+            return;
+        }
+
+        if (data.success) {
+            setOrders(
+                data.orders
+            );
+        }
+    } catch (error) {
+        console.error(
+            "Failed to fetch admin orders:",
+            error
+        );
+    } finally {
+        setOrdersLoading(false);
+    }
+}
+
+// =========================================
+// UPDATE ORDER STATUS
+// =========================================
+
+async function updateOrderStatus(
+    orderId,
+    status
+) {
+    setUpdatingOrder(true);
+
+    try {
+        const response =
+            await fetch(
+                `/api/admin/orders/${orderId}`,
                 {
-                    method: "POST",
+                    method: "PATCH",
+
+                    headers: {
+                        "Content-Type":
+                            "application/json",
+                    },
+
+                    body: JSON.stringify({
+                        status,
+                    }),
                 }
             );
 
-            const data =
-                await response.json();
+        const data =
+            await response.json();
 
-            if (data.success) {
-                window.location.href =
-                    "/admin/login";
-            }
-        } catch (error) {
-            console.error(
-                "Admin logout error:",
-                error
+        if (!response.ok) {
+            alert(
+                data.message ||
+                    "Failed to update order."
+            );
+
+            return;
+        }
+
+        if (data.success) {
+            setOrders(
+                (currentOrders) =>
+                    currentOrders.map(
+                        (order) =>
+                            order._id ===
+                            data.order._id
+                                ? data.order
+                                : order
+                    )
+            );
+
+            setSelectedOrder(
+                data.order
             );
         }
+    } catch (error) {
+        console.error(
+            "Update order status error:",
+            error
+        );
+
+        alert(
+            "Something went wrong."
+        );
+    } finally {
+        setUpdatingOrder(false);
     }
+}
+
+
+    // =========================================
+// ADMIN LOGOUT
+// =========================================
+
+async function handleAdminLogout() {
+    try {
+        const response = await fetch(
+            "/api/auth/logout",
+            {
+                method: "POST",
+            }
+        );
+
+        if (!response.ok) {
+            const errorText =
+                await response.text();
+
+            console.error(
+                "Admin logout error:",
+                errorText
+            );
+
+            return;
+        }
+
+        const data =
+            await response.json();
+
+        if (data.success) {
+            window.location.href =
+                "/login";
+        }
+    } catch (error) {
+        console.error(
+            "Admin logout error:",
+            error
+        );
+    }
+}
 
     // =========================================
     // FORM INPUT
@@ -528,6 +662,61 @@ export default function AdminPage() {
                   products.length
               ).toFixed(1)
             : "0.0";
+
+            const totalOrders =
+    orders.length;
+
+const pendingOrders =
+    orders.filter(
+        (order) =>
+            order.status ===
+            "pending"
+    ).length;
+
+const confirmedOrders =
+    orders.filter(
+        (order) =>
+            order.status ===
+            "confirmed"
+    ).length;
+
+const shippedOrders =
+    orders.filter(
+        (order) =>
+            order.status ===
+            "shipped"
+    ).length;
+
+const deliveredOrders =
+    orders.filter(
+        (order) =>
+            order.status ===
+            "delivered"
+    ).length;
+
+const cancelledOrders =
+    orders.filter(
+        (order) =>
+            order.status ===
+            "cancelled"
+    ).length;
+
+const totalRevenue =
+    orders
+        .filter(
+            (order) =>
+                order.status !==
+                "cancelled"
+        )
+        .reduce(
+            (total, order) =>
+                total +
+                Number(
+                    order.totalAmount ||
+                        0
+                ),
+            0
+        );
 
     // =========================================
     // SIDEBAR ITEM
@@ -2125,53 +2314,674 @@ export default function AdminPage() {
                 ================================= */}
 
                 {activeSection ===
-                    "orders" && (
+    "orders" && (
+    <div
+        style={{
+            padding:
+                "50px 5% 90px",
+        }}
+    >
+
+        {/* =================================
+            ORDERS HEADER
+        ================================= */}
+
+        <div
+            style={{
+                display: "flex",
+                alignItems:
+                    "flex-end",
+                justifyContent:
+                    "space-between",
+                gap: "30px",
+                marginBottom:
+                    "40px",
+            }}
+        >
+
+            <div>
+
+                <p className="section-eyebrow">
+                    GLOWCARE ADMIN
+                </p>
+
+                <h1
+                    style={{
+                        margin:
+                            "8px 0 0",
+                        color:
+                            "var(--espresso-brown)",
+                        fontSize:
+                            "clamp(42px, 5vw, 64px)",
+                        lineHeight:
+                            "0.95",
+                        letterSpacing:
+                            "-3px",
+                        fontWeight:
+                            "500",
+                    }}
+                >
+                    Order
+                    <span
+                        style={{
+                            display:
+                                "block",
+                            color:
+                                "var(--dusty-rose)",
+                            fontFamily:
+                                "Georgia, serif",
+                            fontStyle:
+                                "italic",
+                            fontWeight:
+                                "400",
+                        }}
+                    >
+                        management.
+                    </span>
+                </h1>
+
+            </div>
+
+            <div
+                style={{
+                    color:
+                        "var(--muted-text)",
+                    fontSize:
+                        "12px",
+                }}
+            >
+                {totalOrders} total orders
+            </div>
+
+        </div>
+
+
+        {/* =================================
+            ORDER STATS
+        ================================= */}
+
+        <section
+            style={{
+                display: "grid",
+                gridTemplateColumns:
+                    "repeat(4, minmax(0, 1fr))",
+                gap: "14px",
+                marginBottom:
+                    "30px",
+            }}
+        >
+
+            <div className="admin-stat-card">
+                <span>
+                    Total Orders
+                </span>
+
+                <strong>
+                    {totalOrders}
+                </strong>
+            </div>
+
+
+            <div className="admin-stat-card">
+                <span>
+                    Pending
+                </span>
+
+                <strong>
+                    {pendingOrders}
+                </strong>
+            </div>
+
+
+            <div className="admin-stat-card">
+                <span>
+                    Shipped
+                </span>
+
+                <strong>
+                    {shippedOrders}
+                </strong>
+            </div>
+
+
+            <div className="admin-stat-card">
+                <span>
+                    Revenue
+                </span>
+
+                <strong
+                    style={{
+                        fontSize:
+                            "30px",
+                    }}
+                >
+                    ₹
+                    {totalRevenue.toLocaleString(
+                        "en-IN"
+                    )}
+                </strong>
+            </div>
+
+        </section>
+
+
+        {/* =================================
+            ORDER TABLE
+        ================================= */}
+
+        <section className="admin-products">
+
+            <div
+                className="admin-section-heading"
+            >
+
+                <div>
+
+                    <p className="section-eyebrow">
+                        CUSTOMER ORDERS
+                    </p>
+
+                    <h2>
+                        Recent orders
+                    </h2>
+
+                </div>
+
+                <span>
+                    {orders.length} orders
+                </span>
+
+            </div>
+
+
+            {ordersLoading ? (
+
+                <div
+                    className="admin-product-form"
+                    style={{
+                        textAlign:
+                            "center",
+                        marginTop:
+                            "20px",
+                    }}
+                >
+                    <p className="admin-loading">
+                        Loading orders...
+                    </p>
+                </div>
+
+            ) : orders.length === 0 ? (
+
+                <div
+                    className="admin-product-form"
+                    style={{
+                        textAlign:
+                            "center",
+                        marginTop:
+                            "20px",
+                    }}
+                >
+
+                    <p className="section-eyebrow">
+                        NO ORDERS
+                    </p>
+
+                    <h2
+                        style={{
+                            marginTop:
+                                "10px",
+                            color:
+                                "var(--espresso-brown)",
+                            fontFamily:
+                                "Georgia, serif",
+                            fontWeight:
+                                "400",
+                        }}
+                    >
+                        Your store is
+                        waiting for its
+                        first order.
+                    </h2>
+
+                </div>
+
+            ) : (
+
+                <div
+                    style={{
+                        display:
+                            "flex",
+                        flexDirection:
+                            "column",
+                        gap: "10px",
+                    }}
+                >
+
+                    {orders.map(
+                        (order) => {
+
+                            const customerName =
+                                order
+                                    .shippingAddress
+                                    ?.name ||
+                                order.user
+                                    ?.name ||
+                                "Customer";
+
+                            const date =
+                                new Date(
+                                    order.createdAt
+                                ).toLocaleDateString(
+                                    "en-IN",
+                                    {
+                                        day: "2-digit",
+                                        month:
+                                            "short",
+                                        year:
+                                            "numeric",
+                                    }
+                                );
+
+                            return (
+                                <div
+                                    key={
+                                        order._id
+                                    }
+                                    style={{
+                                        background:
+                                            "var(--milk)",
+                                        border:
+                                            "1px solid var(--light-border)",
+                                        borderRadius:
+                                            "var(--radius-lg)",
+                                        padding:
+                                            "16px 20px",
+                                        display:
+                                            "grid",
+                                        gridTemplateColumns:
+                                            "1.3fr 1.2fr 110px 120px 150px 80px",
+                                        alignItems:
+                                            "center",
+                                        gap:
+                                            "18px",
+                                    }}
+                                >
+
+                                    {/* ORDER */}
+
+                                    <div>
+
+                                        <span
+                                            style={{
+                                                display:
+                                                    "block",
+                                                color:
+                                                    "var(--muted-text)",
+                                                fontSize:
+                                                    "9px",
+                                                letterSpacing:
+                                                    "0.8px",
+                                                marginBottom:
+                                                    "5px",
+                                            }}
+                                        >
+                                            ORDER
+                                        </span>
+
+                                        <strong
+                                            style={{
+                                                color:
+                                                    "var(--espresso-brown)",
+                                                fontSize:
+                                                    "12px",
+                                            }}
+                                        >
+                                            #
+                                            {order._id
+                                                .toString()
+                                                .slice(
+                                                    -8
+                                                )
+                                                .toUpperCase()}
+                                        </strong>
+
+                                    </div>
+
+
+                                    {/* CUSTOMER */}
+
+                                    <div>
+
+                                        <span
+                                            style={{
+                                                display:
+                                                    "block",
+                                                color:
+                                                    "var(--muted-text)",
+                                                fontSize:
+                                                    "9px",
+                                                letterSpacing:
+                                                    "0.8px",
+                                                marginBottom:
+                                                    "5px",
+                                            }}
+                                        >
+                                            CUSTOMER
+                                        </span>
+
+                                        <strong
+                                            style={{
+                                                display:
+                                                    "block",
+                                                color:
+                                                    "var(--espresso-brown)",
+                                                fontFamily:
+                                                    "Georgia, serif",
+                                                fontWeight:
+                                                    "400",
+                                                fontSize:
+                                                    "15px",
+                                            }}
+                                        >
+                                            {
+                                                customerName
+                                            }
+                                        </strong>
+
+                                        <span
+                                            style={{
+                                                color:
+                                                    "var(--muted-text)",
+                                                fontSize:
+                                                    "9px",
+                                            }}
+                                        >
+                                            {
+                                                order
+                                                    .user
+                                                    ?.email
+                                            }
+                                        </span>
+
+                                    </div>
+
+
+                                    {/* DATE */}
+
+                                    <div>
+
+                                        <span
+                                            style={{
+                                                display:
+                                                    "block",
+                                                color:
+                                                    "var(--muted-text)",
+                                                fontSize:
+                                                    "9px",
+                                                marginBottom:
+                                                    "5px",
+                                            }}
+                                        >
+                                            DATE
+                                        </span>
+
+                                        <span
+                                            style={{
+                                                color:
+                                                    "var(--cocoa-taupe)",
+                                                fontSize:
+                                                    "11px",
+                                            }}
+                                        >
+                                            {date}
+                                        </span>
+
+                                    </div>
+
+
+                                    {/* TOTAL */}
+
+                                    <div>
+
+                                        <span
+                                            style={{
+                                                display:
+                                                    "block",
+                                                color:
+                                                    "var(--muted-text)",
+                                                fontSize:
+                                                    "9px",
+                                                marginBottom:
+                                                    "5px",
+                                            }}
+                                        >
+                                            TOTAL
+                                        </span>
+
+                                        <strong
+                                            style={{
+                                                color:
+                                                    "var(--espresso-brown)",
+                                                fontSize:
+                                                    "13px",
+                                            }}
+                                        >
+                                            ₹
+                                            {Number(
+                                                order.totalAmount
+                                            ).toLocaleString(
+                                                "en-IN"
+                                            )}
+                                        </strong>
+
+                                    </div>
+
+
+                                    {/* STATUS */}
+
+                                    <div>
+
+                                        <span
+                                            style={{
+                                                display:
+                                                    "block",
+                                                color:
+                                                    "var(--muted-text)",
+                                                fontSize:
+                                                    "9px",
+                                                marginBottom:
+                                                    "5px",
+                                            }}
+                                        >
+                                            STATUS
+                                        </span>
+
+                                        <select
+                                            value={
+                                                order.status
+                                            }
+                                            disabled={
+                                                updatingOrder
+                                            }
+                                            onChange={(
+                                                event
+                                            ) =>
+                                                updateOrderStatus(
+                                                    order._id,
+                                                    event
+                                                        .target
+                                                        .value
+                                                )
+                                            }
+                                            style={{
+                                                padding:
+                                                    "7px 9px",
+                                                border:
+                                                    "1px solid var(--light-border)",
+                                                borderRadius:
+                                                    "var(--radius-pill)",
+                                                background:
+                                                    "var(--blush-oat)",
+                                                color:
+                                                    "var(--cocoa-taupe)",
+                                                outline:
+                                                    "none",
+                                                fontFamily:
+                                                    "inherit",
+                                                fontSize:
+                                                    "10px",
+                                                cursor:
+                                                    "pointer",
+                                            }}
+                                        >
+
+                                            <option value="pending">
+                                                Pending
+                                            </option>
+
+                                            <option value="confirmed">
+                                                Confirmed
+                                            </option>
+
+                                            <option value="shipped">
+                                                Shipped
+                                            </option>
+
+                                            <option value="delivered">
+                                                Delivered
+                                            </option>
+
+                                            <option value="cancelled">
+                                                Cancelled
+                                            </option>
+
+                                        </select>
+
+                                    </div>
+
+
+                                    {/* VIEW */}
+
+                                    <button
+                                        type="button"
+                                        onClick={() =>
+                                            setSelectedOrder(
+                                                order
+                                            )
+                                        }
+                                        style={{
+                                            padding:
+                                                "9px 12px",
+                                            border:
+                                                "1px solid var(--light-border)",
+                                            borderRadius:
+                                                "var(--radius-pill)",
+                                            background:
+                                                "transparent",
+                                            color:
+                                                "var(--cocoa-taupe)",
+                                            fontFamily:
+                                                "inherit",
+                                            fontSize:
+                                                "10px",
+                                            fontWeight:
+                                                "600",
+                                            cursor:
+                                                "pointer",
+                                        }}
+                                    >
+                                        View
+                                    </button>
+
+                                </div>
+                            );
+                        }
+                    )}
+
+                </div>
+
+            )}
+
+        </section>
+
+
+        {/* =================================
+            ORDER DETAILS MODAL
+        ================================= */}
+
+        {selectedOrder && (
+            <div
+                onClick={() =>
+                    setSelectedOrder(
+                        null
+                    )
+                }
+                style={{
+                    position:
+                        "fixed",
+                    inset: 0,
+                    background:
+                        "rgba(50, 35, 30, 0.35)",
+                    display:
+                        "flex",
+                    alignItems:
+                        "center",
+                    justifyContent:
+                        "center",
+                    padding:
+                        "30px",
+                    zIndex: 100,
+                }}
+            >
+
+                <div
+                    onClick={(event) =>
+                        event.stopPropagation()
+                    }
+                    style={{
+                        width:
+                            "min(760px, 100%)",
+                        maxHeight:
+                            "90vh",
+                        overflowY:
+                            "auto",
+                        background:
+                            "var(--milk)",
+                        borderRadius:
+                            "var(--radius-xl)",
+                        padding:
+                            "32px",
+                        boxShadow:
+                            "0 25px 70px rgba(50,35,30,0.18)",
+                    }}
+                >
+
+                    {/* MODAL HEADER */}
+
                     <div
                         style={{
-                            padding:
-                                "50px 5% 90px",
+                            display:
+                                "flex",
+                            justifyContent:
+                                "space-between",
+                            alignItems:
+                                "flex-start",
+                            gap: "20px",
+                            marginBottom:
+                                "28px",
                         }}
                     >
 
-                        <div className="admin-header">
-
-                            <div>
-
-                                <p className="section-eyebrow">
-                                    GLOWCARE
-                                    ADMIN
-                                </p>
-
-                                <h1>
-                                    Order
-                                    <span>
-                                        management.
-                                    </span>
-                                </h1>
-
-                            </div>
-
-                        </div>
-
-
-                        <section
-                            className="admin-product-form"
-                            style={{
-                                marginTop:
-                                    "45px",
-                                textAlign:
-                                    "center",
-                            }}
-                        >
+                        <div>
 
                             <p className="section-eyebrow">
-                                NEXT
+                                ORDER DETAILS
                             </p>
 
                             <h2
                                 style={{
                                     marginTop:
-                                        "8px",
+                                        "7px",
                                     color:
                                         "var(--espresso-brown)",
                                     fontFamily:
@@ -2182,31 +2992,503 @@ export default function AdminPage() {
                                         "400",
                                 }}
                             >
-                                Your orders will
-                                appear here.
+                                #
+                                {selectedOrder._id
+                                    .toString()
+                                    .slice(
+                                        -8
+                                    )
+                                    .toUpperCase()}
                             </h2>
+
+                        </div>
+
+
+                        <button
+                            type="button"
+                            onClick={() =>
+                                setSelectedOrder(
+                                    null
+                                )
+                            }
+                            style={{
+                                width:
+                                    "32px",
+                                height:
+                                    "32px",
+                                border:
+                                    "1px solid var(--light-border)",
+                                borderRadius:
+                                    "50%",
+                                background:
+                                    "transparent",
+                                color:
+                                    "var(--cocoa-taupe)",
+                                cursor:
+                                    "pointer",
+                                fontSize:
+                                    "16px",
+                            }}
+                        >
+                            ×
+                        </button>
+
+                    </div>
+
+
+                    {/* CUSTOMER */}
+
+                    <div
+                        className="admin-stat-card"
+                        style={{
+                            marginBottom:
+                                "12px",
+                        }}
+                    >
+
+                        <span>
+                            Customer
+                        </span>
+
+                        <strong
+                            style={{
+                                fontSize:
+                                    "22px",
+                            }}
+                        >
+                            {
+                                selectedOrder
+                                    .shippingAddress
+                                    ?.name
+                            }
+                        </strong>
+
+                        <p
+                            style={{
+                                marginTop:
+                                    "7px",
+                                color:
+                                    "var(--muted-text)",
+                                fontSize:
+                                    "11px",
+                            }}
+                        >
+                            {
+                                selectedOrder
+                                    .user
+                                    ?.email
+                            }
+                        </p>
+
+                    </div>
+
+
+                    {/* ORDER ITEMS */}
+
+                    <div
+                        style={{
+                            marginTop:
+                                "18px",
+                            padding:
+                                "22px",
+                            border:
+                                "1px solid var(--light-border)",
+                            borderRadius:
+                                "var(--radius-lg)",
+                        }}
+                    >
+
+                        <p className="section-eyebrow">
+                            ITEMS
+                        </p>
+
+                        <div
+                            style={{
+                                marginTop:
+                                    "15px",
+                                display:
+                                    "flex",
+                                flexDirection:
+                                    "column",
+                                gap:
+                                    "12px",
+                            }}
+                        >
+
+                            {selectedOrder.items.map(
+                                (
+                                    item,
+                                    index
+                                ) => (
+                                    <div
+                                        key={
+                                            index
+                                        }
+                                        style={{
+                                            display:
+                                                "flex",
+                                            alignItems:
+                                                "center",
+                                            justifyContent:
+                                                "space-between",
+                                            gap:
+                                                "15px",
+                                            paddingBottom:
+                                                "12px",
+                                            borderBottom:
+                                                "1px solid var(--light-border)",
+                                        }}
+                                    >
+
+                                        <div>
+
+                                            <strong
+                                                style={{
+                                                    color:
+                                                        "var(--espresso-brown)",
+                                                    fontFamily:
+                                                        "Georgia, serif",
+                                                    fontSize:
+                                                        "14px",
+                                                    fontWeight:
+                                                        "400",
+                                                }}
+                                            >
+                                                {
+                                                    item
+                                                        .product
+                                                        ?.name
+                                                }
+                                            </strong>
+
+                                            <span
+                                                style={{
+                                                    display:
+                                                        "block",
+                                                    marginTop:
+                                                        "4px",
+                                                    color:
+                                                        "var(--muted-text)",
+                                                    fontSize:
+                                                        "10px",
+                                                }}
+                                            >
+                                                Quantity:
+                                                {
+                                                    " "
+                                                }
+                                                {
+                                                    item.quantity
+                                                }
+                                            </span>
+
+                                        </div>
+
+
+                                        <strong
+                                            style={{
+                                                color:
+                                                    "var(--espresso-brown)",
+                                                fontSize:
+                                                    "12px",
+                                            }}
+                                        >
+                                            ₹
+                                            {(
+                                                item.price *
+                                                item.quantity
+                                            ).toLocaleString(
+                                                "en-IN"
+                                            )}
+                                        </strong>
+
+                                    </div>
+                                )
+                            )}
+
+                        </div>
+
+
+                        <div
+                            style={{
+                                display:
+                                    "flex",
+                                justifyContent:
+                                    "space-between",
+                                paddingTop:
+                                    "18px",
+                            }}
+                        >
+
+                            <span
+                                style={{
+                                    color:
+                                        "var(--muted-text)",
+                                    fontSize:
+                                        "12px",
+                                }}
+                            >
+                                Order Total
+                            </span>
+
+                            <strong
+                                style={{
+                                    color:
+                                        "var(--espresso-brown)",
+                                    fontFamily:
+                                        "Georgia, serif",
+                                    fontSize:
+                                        "20px",
+                                    fontWeight:
+                                        "400",
+                                }}
+                            >
+                                ₹
+                                {Number(
+                                    selectedOrder.totalAmount
+                                ).toLocaleString(
+                                    "en-IN"
+                                )}
+                            </strong>
+
+                        </div>
+
+                    </div>
+
+
+                    {/* PAYMENT + STATUS */}
+
+                    <div
+                        style={{
+                            display:
+                                "grid",
+                            gridTemplateColumns:
+                                "1fr 1fr",
+                            gap:
+                                "12px",
+                            marginTop:
+                                "12px",
+                        }}
+                    >
+
+                        <div className="admin-stat-card">
+
+                            <span>
+                                Payment
+                            </span>
+
+                            <strong
+                                style={{
+                                    fontSize:
+                                        "20px",
+                                    textTransform:
+                                        "uppercase",
+                                }}
+                            >
+                                {
+                                    selectedOrder
+                                        .paymentMethod
+                                }
+                            </strong>
 
                             <p
                                 style={{
                                     marginTop:
-                                        "12px",
+                                        "5px",
                                     color:
                                         "var(--muted-text)",
                                     fontSize:
-                                        "13px",
+                                        "10px",
+                                    textTransform:
+                                        "capitalize",
                                 }}
                             >
-                                Order management is
-                                the next step. We'll
-                                connect this section
-                                to your existing
-                                orders.
+                                {
+                                    selectedOrder
+                                        .paymentStatus
+                                }
                             </p>
 
-                        </section>
+                        </div>
+
+
+                        <div className="admin-stat-card">
+
+                            <span>
+                                Order Status
+                            </span>
+
+                            <select
+                                value={
+                                    selectedOrder.status
+                                }
+                                disabled={
+                                    updatingOrder
+                                }
+                                onChange={(
+                                    event
+                                ) =>
+                                    updateOrderStatus(
+                                        selectedOrder._id,
+                                        event
+                                            .target
+                                            .value
+                                    )
+                                }
+                                style={{
+                                    marginTop:
+                                        "5px",
+                                    padding:
+                                        "9px 10px",
+                                    border:
+                                        "1px solid var(--light-border)",
+                                    borderRadius:
+                                        "var(--radius-pill)",
+                                    background:
+                                        "var(--blush-oat)",
+                                    color:
+                                        "var(--cocoa-taupe)",
+                                    fontFamily:
+                                        "inherit",
+                                    fontSize:
+                                        "11px",
+                                    outline:
+                                        "none",
+                                }}
+                            >
+
+                                <option value="pending">
+                                    Pending
+                                </option>
+
+                                <option value="confirmed">
+                                    Confirmed
+                                </option>
+
+                                <option value="shipped">
+                                    Shipped
+                                </option>
+
+                                <option value="delivered">
+                                    Delivered
+                                </option>
+
+                                <option value="cancelled">
+                                    Cancelled
+                                </option>
+
+                            </select>
+
+                        </div>
 
                     </div>
-                )}
+
+
+                    {/* ADDRESS */}
+
+                    <div
+                        style={{
+                            marginTop:
+                                "12px",
+                            padding:
+                                "22px",
+                            background:
+                                "var(--blush-oat)",
+                            borderRadius:
+                                "var(--radius-lg)",
+                        }}
+                    >
+
+                        <p className="section-eyebrow">
+                            DELIVERY ADDRESS
+                        </p>
+
+                        <p
+                            style={{
+                                marginTop:
+                                    "12px",
+                                color:
+                                    "var(--espresso-brown)",
+                                fontSize:
+                                    "12px",
+                                lineHeight:
+                                    "1.8",
+                            }}
+                        >
+                            <strong>
+                                {
+                                    selectedOrder
+                                        .shippingAddress
+                                        ?.name
+                                }
+                            </strong>
+                            <br />
+
+                            {
+                                selectedOrder
+                                    .shippingAddress
+                                    ?.address
+                            }
+                            <br />
+
+                            {
+                                selectedOrder
+                                    .shippingAddress
+                                    ?.city
+                            }
+                            ,{" "}
+                            {
+                                selectedOrder
+                                    .shippingAddress
+                                    ?.state
+                            }{" "}
+                            -{" "}
+                            {
+                                selectedOrder
+                                    .shippingAddress
+                                    ?.pincode
+                            }
+                            <br />
+
+                            Phone:{" "}
+                            {
+                                selectedOrder
+                                    .shippingAddress
+                                    ?.phone
+                            }
+                        </p>
+
+                    </div>
+
+
+                    {/* CLOSE */}
+
+                    <button
+                        type="button"
+                        className="admin-submit-button"
+                        onClick={() =>
+                            setSelectedOrder(
+                                null
+                            )
+                        }
+                        style={{
+                            marginTop:
+                                "22px",
+                        }}
+                    >
+                        Close
+                        <span>
+                            ×
+                        </span>
+                    </button>
+
+                </div>
+
+            </div>
+        )}
+
+    </div>
+)}
 
 
                 {/* =================================

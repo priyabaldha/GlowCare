@@ -325,14 +325,6 @@ export default function CartPage() {
                         </strong>
                     </div>
 
-                    <Link
-                        href="/checkout"
-                        className="checkout-button"
-                    >
-                        Proceed to Checkout
-                        <span>→</span>
-                    </Link>
-
                     <div className="cart-summary-actions">
 
                         <Link
