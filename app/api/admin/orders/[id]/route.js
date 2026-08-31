@@ -1,11 +1,11 @@
 import connectDB from "../../../../../lib/db";
 import Order from "../../../../../models/Order";
 import User from "../../../../../models/User";
+import Product from "../../../../../models/Product";
 import { getSessionUserId } from "../../../../../lib/auth";
 
-
 // =========================================
-// PATCH → UPDATE ORDER
+// PATCH → UPDATE ORDER STATUS
 // =========================================
 
 export async function PATCH(
@@ -13,7 +13,9 @@ export async function PATCH(
     { params }
 ) {
     try {
-        const { id } = await params;
+        // Next.js 16
+        const { id } =
+            await params;
 
         const userId =
             await getSessionUserId();
@@ -31,7 +33,10 @@ export async function PATCH(
 
         await connectDB();
 
-        // Check admin
+        // =========================================
+        // CHECK ADMIN
+        // =========================================
+
         const admin =
             await User.findById(
                 userId
@@ -48,7 +53,9 @@ export async function PATCH(
             );
         }
 
-        if (admin.role !== "admin") {
+        if (
+            admin.role !== "admin"
+        ) {
             return Response.json(
                 {
                     success: false,
@@ -58,6 +65,10 @@ export async function PATCH(
                 { status: 403 }
             );
         }
+
+        // =========================================
+        // GET NEW STATUS
+        // =========================================
 
         const { status } =
             await request.json();
@@ -85,24 +96,12 @@ export async function PATCH(
             );
         }
 
+        // =========================================
+        // FIND ORDER
+        // =========================================
+
         const order =
-            await Order.findByIdAndUpdate(
-                id,
-                {
-                    status,
-                },
-                {
-                    new: true,
-                }
-            )
-                .populate(
-                    "user",
-                    "name email"
-                )
-                .populate(
-                    "items.product",
-                    "name image price"
-                );
+            await Order.findById(id);
 
         if (!order) {
             return Response.json(
@@ -114,6 +113,153 @@ export async function PATCH(
                 { status: 404 }
             );
         }
+
+        const currentStatus =
+            order.status;
+
+        // =========================================
+        // PREVENT CHANGING SAME STATUS
+        // =========================================
+
+        if (
+            currentStatus === status
+        ) {
+            return Response.json(
+                {
+                    success: false,
+                    message:
+                        `Order is already ${status}.`,
+                },
+                { status: 400 }
+            );
+        }
+
+        // =========================================
+        // PREVENT CHANGES AFTER CANCELLED
+        // =========================================
+
+        if (
+            currentStatus ===
+            "cancelled"
+        ) {
+            return Response.json(
+                {
+                    success: false,
+                    message:
+                        "Cancelled orders cannot be changed.",
+                },
+                { status: 400 }
+            );
+        }
+
+        // =========================================
+        // PREVENT CHANGES AFTER DELIVERED
+        // =========================================
+
+        if (
+            currentStatus ===
+            "delivered"
+        ) {
+            return Response.json(
+                {
+                    success: false,
+                    message:
+                        "Delivered orders cannot be changed.",
+                },
+                { status: 400 }
+            );
+        }
+
+        // =========================================
+        // VALID STATUS FLOW
+        // =========================================
+
+        const validTransitions = {
+            pending: [
+                "confirmed",
+                "cancelled",
+            ],
+
+            confirmed: [
+                "shipped",
+                "cancelled",
+            ],
+
+            shipped: [
+                "delivered",
+            ],
+
+            delivered: [],
+
+            cancelled: [],
+        };
+
+        if (
+            !validTransitions[
+                currentStatus
+            ]?.includes(status)
+        ) {
+            return Response.json(
+                {
+                    success: false,
+                    message:
+                        `Cannot change order from ${currentStatus} to ${status}.`,
+                },
+                { status: 400 }
+            );
+        }
+
+        // =========================================
+        // CANCEL ORDER
+        // RETURN STOCK
+        // =========================================
+
+        if (
+            status ===
+                "cancelled" &&
+            currentStatus !==
+                "cancelled"
+        ) {
+            for (
+                const item of order.items
+            ) {
+                await Product.findByIdAndUpdate(
+                    item.product,
+                    {
+                        $inc: {
+                            stock:
+                                item.quantity,
+                        },
+                    }
+                );
+            }
+        }
+
+        // =========================================
+        // UPDATE STATUS
+        // =========================================
+
+        order.status =
+            status;
+
+        await order.save();
+
+        // =========================================
+        // POPULATE UPDATED ORDER
+        // =========================================
+
+        await order.populate([
+            {
+                path: "user",
+                select:
+                    "name email",
+            },
+            {
+                path: "items.product",
+                select:
+                    "name image price",
+            },
+        ]);
 
         return Response.json({
             success: true,

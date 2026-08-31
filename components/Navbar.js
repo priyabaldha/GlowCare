@@ -3,9 +3,13 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
+import { useCart } from "../context/CartContext";
 
 export default function Navbar() {
   const pathname = usePathname();
+
+  // Get cart count directly from CartContext
+  const { cartCount } = useCart();
 
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -16,7 +20,6 @@ export default function Navbar() {
 
   useEffect(() => {
     // Admin pages have their own sidebar/navbar
-    // so there is no need to check the user here.
     if (pathname.startsWith("/admin")) {
       setLoading(false);
       return;
@@ -27,20 +30,24 @@ export default function Navbar() {
 
   async function checkUser() {
     try {
-      const response = await fetch("/api/auth/me");
+      const response = await fetch(
+        "/api/auth/me"
+      );
 
       if (!response.ok) {
         setUser(null);
         return;
       }
 
-      const data = await response.json();
+      const data =
+        await response.json();
 
       if (data.success) {
         setUser(data.user);
       } else {
         setUser(null);
       }
+
     } catch (error) {
       console.error(
         "Failed to check user:",
@@ -48,6 +55,7 @@ export default function Navbar() {
       );
 
       setUser(null);
+
     } finally {
       setLoading(false);
     }
@@ -59,12 +67,13 @@ export default function Navbar() {
 
   async function handleLogout() {
     try {
-      const response = await fetch(
-        "/api/auth/logout",
-        {
-          method: "POST",
-        }
-      );
+      const response =
+        await fetch(
+          "/api/auth/logout",
+          {
+            method: "POST",
+          }
+        );
 
       if (!response.ok) {
         const errorText =
@@ -82,13 +91,12 @@ export default function Navbar() {
         await response.json();
 
       if (data.success) {
-        // Remove user immediately
         setUser(null);
 
-        // Go to login page
         window.location.href =
           "/login";
       }
+
     } catch (error) {
       console.error(
         "Logout error:",
@@ -199,7 +207,9 @@ export default function Navbar() {
                     r="7"
                   />
 
-                  <path d="m20 20-4-4" />
+                  <path
+                    d="m20 20-4-4"
+                  />
                 </svg>
               </button>
 
@@ -228,13 +238,20 @@ export default function Navbar() {
               </Link>
 
 
-              {/* Cart */}
+              {/* =================================
+                  CART
+              ================================= */}
 
               <Link
                 href="/cart"
                 className="icon-button"
                 aria-label="Shopping cart"
+                style={{
+                  position:
+                    "relative",
+                }}
               >
+
                 <svg
                   width="20"
                   height="20"
@@ -261,6 +278,63 @@ export default function Navbar() {
                     r="1"
                   />
                 </svg>
+
+
+                {/* =================================
+                    CART COUNT
+                ================================= */}
+
+                {cartCount > 0 && (
+                  <span
+                    style={{
+                      position:
+                        "absolute",
+
+                      top: "-5px",
+
+                      right: "-5px",
+
+                      minWidth:
+                        "17px",
+
+                      height:
+                        "17px",
+
+                      padding:
+                        "0 4px",
+
+                      display:
+                        "flex",
+
+                      alignItems:
+                        "center",
+
+                      justifyContent:
+                        "center",
+
+                      background:
+                        "var(--dusty-rose)",
+
+                      color:
+                        "var(--milk)",
+
+                      borderRadius:
+                        "50%",
+
+                      fontSize:
+                        "9px",
+
+                      fontWeight:
+                        "700",
+
+                      lineHeight:
+                        "1",
+                    }}
+                  >
+                    {cartCount}
+                  </span>
+                )}
+
               </Link>
 
             </>
@@ -278,7 +352,8 @@ export default function Navbar() {
                 {/* Logged-in user */}
 
                 <span className="navbar-user">
-                  {user.role === "admin"
+                  {user.role ===
+                  "admin"
                     ? "Admin"
                     : `Hi, ${user.name}`}
                 </span>
@@ -289,7 +364,9 @@ export default function Navbar() {
                 <button
                   type="button"
                   className="logout-button"
-                  onClick={handleLogout}
+                  onClick={
+                    handleLogout
+                  }
                 >
                   Logout
                 </button>
