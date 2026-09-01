@@ -23,16 +23,23 @@ export default function AdminPage() {
     const [activeSection, setActiveSection] =
         useState("overview");
 
-        const [orders, setOrders] = useState([]);
+    const [orders, setOrders] = useState([]);
 
-const [ordersLoading, setOrdersLoading] =
-    useState(false);
+    const [ordersLoading, setOrdersLoading] =
+        useState(false);
 
-const [selectedOrder, setSelectedOrder] =
-    useState(null);
+    const [selectedOrder, setSelectedOrder] =
+        useState(null);
 
-const [updatingOrder, setUpdatingOrder] =
-    useState(false);
+    const [updatingOrder, setUpdatingOrder] =
+        useState(false);
+
+    const [shippingData, setShippingData] =
+        useState({
+            courierName: "",
+            trackingNumber: "",
+            trackingUrl: "",
+        });
 
     const [formData, setFormData] = useState({
         name: "",
@@ -50,9 +57,9 @@ const [updatingOrder, setUpdatingOrder] =
     // =========================================
 
     useEffect(() => {
-    fetchProducts();
-    fetchOrders();
-}, []);
+        fetchProducts();
+        fetchOrders();
+    }, []);
 
     async function fetchProducts() {
         try {
@@ -77,43 +84,43 @@ const [updatingOrder, setUpdatingOrder] =
     }
 
     // =========================================
-// FETCH ADMIN ORDERS
-// =========================================
+    // FETCH ADMIN ORDERS
+    // =========================================
 
-async function fetchOrders() {
-    setOrdersLoading(true);
+    async function fetchOrders() {
+        setOrdersLoading(true);
 
-    try {
-        const response =
-            await fetch(
-                "/api/admin/orders"
-            );
+        try {
+            const response =
+                await fetch(
+                    "/api/admin/orders"
+                );
 
-        const data =
-            await response.json();
+            const data =
+                await response.json();
 
-        if (!response.ok) {
+            if (!response.ok) {
+                console.error(
+                    data.message
+                );
+
+                return;
+            }
+
+            if (data.success) {
+                setOrders(
+                    data.orders
+                );
+            }
+        } catch (error) {
             console.error(
-                data.message
+                "Failed to fetch admin orders:",
+                error
             );
-
-            return;
+        } finally {
+            setOrdersLoading(false);
         }
-
-        if (data.success) {
-            setOrders(
-                data.orders
-            );
-        }
-    } catch (error) {
-        console.error(
-            "Failed to fetch admin orders:",
-            error
-        );
-    } finally {
-        setOrdersLoading(false);
     }
-}
 
 // =========================================
 // UPDATE ORDER STATUS
@@ -123,54 +130,122 @@ async function updateOrderStatus(
     orderId,
     status
 ) {
-    setUpdatingOrder(true);
+    // =========================================
+    // SHIPPING VALIDATION
+    // =========================================
 
-    try {
-        const response =
-            await fetch(
-                `/api/admin/orders/${orderId}`,
-                {
-                    method: "PATCH",
-
-                    headers: {
-                        "Content-Type":
-                            "application/json",
-                    },
-
-                    body: JSON.stringify({
-                        status,
-                    }),
-                }
-            );
-
-        const data =
-            await response.json();
-
-        if (!response.ok) {
+    if (status === "shipped") {
+        if (!shippingData.courierName.trim()) {
             alert(
-                data.message ||
-                    "Failed to update order."
+                "Please enter courier name."
             );
 
             return;
         }
 
-        if (data.success) {
-            setOrders(
-                (currentOrders) =>
-                    currentOrders.map(
-                        (order) =>
-                            order._id ===
-                            data.order._id
-                                ? data.order
-                                : order
-                    )
+        if (!shippingData.trackingNumber.trim()) {
+            alert(
+                "Please enter tracking number."
             );
 
-            setSelectedOrder(
-                data.order
-            );
+            return;
         }
+    }
+
+    setUpdatingOrder(true);
+
+    try {
+        const response = await fetch(
+            `/api/admin/orders/${orderId}`,
+            {
+                method: "PATCH",
+
+                headers: {
+                    "Content-Type":
+                        "application/json",
+                },
+
+                body: JSON.stringify({
+                    status,
+
+                    courierName:
+                        shippingData.courierName.trim(),
+
+                    trackingNumber:
+                        shippingData.trackingNumber.trim(),
+
+                    trackingUrl:
+                        shippingData.trackingUrl.trim(),
+                }),
+            }
+        );
+
+        const data =
+            await response.json();
+
+        console.log(
+            "Update order response:",
+            data
+        );
+
+        if (!response.ok) {
+            alert(
+                data.message ||
+                "Failed to update order."
+            );
+
+            return;
+        }
+
+        if (!data.success || !data.order) {
+            alert(
+                data.message ||
+                "Failed to update order."
+            );
+
+            return;
+        }
+
+        // =========================================
+        // UPDATE ORDERS LIST
+        // =========================================
+
+        setOrders(
+            (currentOrders) =>
+                currentOrders.map(
+                    (order) =>
+                        order._id ===
+                            data.order._id
+                            ? data.order
+                            : order
+                )
+        );
+
+        // =========================================
+        // UPDATE SELECTED ORDER
+        // =========================================
+
+        setSelectedOrder(
+            data.order
+        );
+
+        // =========================================
+        // CLEAR SHIPPING FORM
+        // =========================================
+
+        if (status === "shipped") {
+            setShippingData({
+                courierName: "",
+                trackingNumber: "",
+                trackingUrl: "",
+            });
+        }
+
+        alert(
+            data.message ||
+            "Order updated successfully."
+        );
+
     } catch (error) {
         console.error(
             "Update order status error:",
@@ -178,53 +253,219 @@ async function updateOrderStatus(
         );
 
         alert(
-            "Something went wrong."
+            "Something went wrong while updating the order."
         );
+
     } finally {
         setUpdatingOrder(false);
     }
 }
 
-
     // =========================================
-// ADMIN LOGOUT
-// =========================================
+    // REJECT CANCELLATION
+    // =========================================
 
-async function handleAdminLogout() {
-    try {
-        const response = await fetch(
-            "/api/auth/logout",
-            {
-                method: "POST",
+    async function rejectCancellation(
+        orderId
+    ) {
+        setUpdatingOrder(true);
+
+        try {
+            const response =
+                await fetch(
+                    `/api/admin/orders/${orderId}`,
+                    {
+                        method: "PATCH",
+
+                        headers: {
+                            "Content-Type":
+                                "application/json",
+                        },
+
+                        body: JSON.stringify({
+                            action:
+                                "reject_cancellation",
+                        }),
+                    }
+                );
+
+            const data =
+                await response.json();
+
+            if (!response.ok) {
+                alert(
+                    data.message ||
+                    "Failed to reject cancellation."
+                );
+
+                return;
             }
-        );
 
-        if (!response.ok) {
-            const errorText =
-                await response.text();
+            if (
+                data.success
+            ) {
+                setOrders(
+                    (currentOrders) =>
+                        currentOrders.map(
+                            (order) =>
+                                order._id ===
+                                    data.order._id
+                                    ? data.order
+                                    : order
+                        )
+                );
 
+                setSelectedOrder(
+                    data.order
+                );
+
+                alert(
+                    "Cancellation request rejected."
+                );
+            }
+
+        } catch (error) {
             console.error(
-                "Admin logout error:",
-                errorText
+                "Reject cancellation error:",
+                error
             );
 
+            alert(
+                "Something went wrong."
+            );
+
+        } finally {
+            setUpdatingOrder(false);
+        }
+    }
+
+
+    // =========================================
+    // PROCESS REFUND
+    // =========================================
+
+    async function processRefund(
+        orderId
+    ) {
+        const confirmed =
+            window.confirm(
+                "Process the demo refund for this order?"
+            );
+
+        if (!confirmed) {
             return;
         }
 
-        const data =
-            await response.json();
+        setUpdatingOrder(true);
 
-        if (data.success) {
-            window.location.href =
-                "/login";
+        try {
+            const response =
+                await fetch(
+                    `/api/admin/orders/${orderId}`,
+                    {
+                        method: "PATCH",
+
+                        headers: {
+                            "Content-Type":
+                                "application/json",
+                        },
+
+                        body: JSON.stringify({
+                            action:
+                                "process_refund",
+                        }),
+                    }
+                );
+
+            const data =
+                await response.json();
+
+            if (!response.ok) {
+                alert(
+                    data.message ||
+                    "Failed to process refund."
+                );
+
+                return;
+            }
+
+            if (
+                data.success
+            ) {
+                setOrders(
+                    (currentOrders) =>
+                        currentOrders.map(
+                            (order) =>
+                                order._id ===
+                                    data.order._id
+                                    ? data.order
+                                    : order
+                        )
+                );
+
+                setSelectedOrder(
+                    data.order
+                );
+
+                alert(
+                    "Demo refund processed successfully."
+                );
+            }
+
+        } catch (error) {
+            console.error(
+                "Refund error:",
+                error
+            );
+
+            alert(
+                "Something went wrong."
+            );
+
+        } finally {
+            setUpdatingOrder(false);
         }
-    } catch (error) {
-        console.error(
-            "Admin logout error:",
-            error
-        );
     }
-}
+
+    // =========================================
+    // ADMIN LOGOUT
+    // =========================================
+
+    async function handleAdminLogout() {
+        try {
+            const response = await fetch(
+                "/api/auth/logout",
+                {
+                    method: "POST",
+                }
+            );
+
+            if (!response.ok) {
+                const errorText =
+                    await response.text();
+
+                console.error(
+                    "Admin logout error:",
+                    errorText
+                );
+
+                return;
+            }
+
+            const data =
+                await response.json();
+
+            if (data.success) {
+                window.location.href =
+                    "/login";
+            }
+        } catch (error) {
+            console.error(
+                "Admin logout error:",
+                error
+            );
+        }
+    }
 
     // =========================================
     // FORM INPUT
@@ -564,8 +805,8 @@ async function handleAdminLogout() {
                         current.map(
                             (product) =>
                                 product._id ===
-                                data.product
-                                    ._id
+                                    data.product
+                                        ._id
                                     ? data.product
                                     : product
                         )
@@ -647,76 +888,76 @@ async function handleAdminLogout() {
     const averageRating =
         products.length
             ? (
-                  products.reduce(
-                      (
-                          total,
-                          product
-                      ) =>
-                          total +
-                          Number(
-                              product.rating ||
-                                  0
-                          ),
-                      0
-                  ) /
-                  products.length
-              ).toFixed(1)
+                products.reduce(
+                    (
+                        total,
+                        product
+                    ) =>
+                        total +
+                        Number(
+                            product.rating ||
+                            0
+                        ),
+                    0
+                ) /
+                products.length
+            ).toFixed(1)
             : "0.0";
 
-            const totalOrders =
-    orders.length;
+    const totalOrders =
+        orders.length;
 
-const pendingOrders =
-    orders.filter(
-        (order) =>
-            order.status ===
-            "pending"
-    ).length;
-
-const confirmedOrders =
-    orders.filter(
-        (order) =>
-            order.status ===
-            "confirmed"
-    ).length;
-
-const shippedOrders =
-    orders.filter(
-        (order) =>
-            order.status ===
-            "shipped"
-    ).length;
-
-const deliveredOrders =
-    orders.filter(
-        (order) =>
-            order.status ===
-            "delivered"
-    ).length;
-
-const cancelledOrders =
-    orders.filter(
-        (order) =>
-            order.status ===
-            "cancelled"
-    ).length;
-
-const totalRevenue =
-    orders
-        .filter(
+    const pendingOrders =
+        orders.filter(
             (order) =>
-                order.status !==
+                order.status ===
+                "pending"
+        ).length;
+
+    const confirmedOrders =
+        orders.filter(
+            (order) =>
+                order.status ===
+                "confirmed"
+        ).length;
+
+    const shippedOrders =
+        orders.filter(
+            (order) =>
+                order.status ===
+                "shipped"
+        ).length;
+
+    const deliveredOrders =
+        orders.filter(
+            (order) =>
+                order.status ===
+                "delivered"
+        ).length;
+
+    const cancelledOrders =
+        orders.filter(
+            (order) =>
+                order.status ===
                 "cancelled"
-        )
-        .reduce(
-            (total, order) =>
-                total +
-                Number(
-                    order.totalAmount ||
+        ).length;
+
+    const totalRevenue =
+        orders
+            .filter(
+                (order) =>
+                    order.status !==
+                    "cancelled"
+            )
+            .reduce(
+                (total, order) =>
+                    total +
+                    Number(
+                        order.totalAmount ||
                         0
-                ),
-            0
-        );
+                    ),
+                0
+            );
 
     // =========================================
     // SIDEBAR ITEM
@@ -1123,590 +1364,733 @@ const totalRevenue =
 
                 {activeSection ===
                     "overview" && (
-                    <div
-                        style={{
-                            padding:
-                                "50px 5% 90px",
-                        }}
-                    >
-
-                        {/* Welcome */}
-
                         <div
                             style={{
-                                display:
-                                    "flex",
-                                alignItems:
-                                    "flex-end",
-                                justifyContent:
-                                    "space-between",
-                                gap:
-                                    "30px",
-                                marginBottom:
-                                    "42px",
+                                padding:
+                                    "50px 5% 90px",
                             }}
                         >
 
-                            <div>
-
-                                <p className="section-eyebrow">
-                                    GLOWCARE
-                                    ADMIN
-                                </p>
-
-                                <h1
-                                    style={{
-                                        margin:
-                                            "8px 0 0",
-                                        color:
-                                            "var(--espresso-brown)",
-                                        fontSize:
-                                            "clamp(42px, 5vw, 68px)",
-                                        lineHeight:
-                                            "0.95",
-                                        letterSpacing:
-                                            "-3px",
-                                        fontWeight:
-                                            "500",
-                                    }}
-                                >
-                                    Good morning,
-                                    <span
-                                        style={{
-                                            display:
-                                                "block",
-                                            color:
-                                                "var(--dusty-rose)",
-                                            fontFamily:
-                                                "Georgia, serif",
-                                            fontStyle:
-                                                "italic",
-                                            fontWeight:
-                                                "400",
-                                        }}
-                                    >
-                                        Admin.
-                                    </span>
-                                </h1>
-
-                                <p
-                                    style={{
-                                        marginTop:
-                                            "18px",
-                                        color:
-                                            "var(--muted-text)",
-                                        fontSize:
-                                            "13px",
-                                    }}
-                                >
-                                    Here's what's
-                                    happening with
-                                    your GlowCare
-                                    store.
-                                </p>
-
-                            </div>
-
-
-                            <button
-                                className="admin-add-button"
-                                type="button"
-                                onClick={() => {
-                                    setActiveSection(
-                                        "products"
-                                    );
-
-                                    openAddForm();
-                                }}
-                            >
-                                + Add Product
-                            </button>
-
-                        </div>
-
-
-                        {/* =================================
-                            STAT CARDS
-                        ================================= */}
-
-                        <section
-                            style={{
-                                display:
-                                    "grid",
-                                gridTemplateColumns:
-                                    "repeat(4, minmax(0, 1fr))",
-                                gap: "14px",
-                                marginBottom:
-                                    "35px",
-                            }}
-                        >
-
-                            {/* Products */}
-
-                            <div className="admin-stat-card">
-
-                                <span>
-                                    Products
-                                </span>
-
-                                <strong>
-                                    {
-                                        totalProducts
-                                    }
-                                </strong>
-
-                                <p
-                                    style={{
-                                        marginTop:
-                                            "10px",
-                                        color:
-                                            "var(--muted-text)",
-                                        fontSize:
-                                            "10px",
-                                    }}
-                                >
-                                    In your
-                                    catalog
-                                </p>
-
-                            </div>
-
-
-                            {/* Stock */}
-
-                            <div className="admin-stat-card">
-
-                                <span>
-                                    Total Stock
-                                </span>
-
-                                <strong>
-                                    {
-                                        totalStock
-                                    }
-                                </strong>
-
-                                <p
-                                    style={{
-                                        marginTop:
-                                            "10px",
-                                        color:
-                                            "var(--muted-text)",
-                                        fontSize:
-                                            "10px",
-                                    }}
-                                >
-                                    Units available
-                                </p>
-
-                            </div>
-
-
-                            {/* Categories */}
-
-                            <div className="admin-stat-card">
-
-                                <span>
-                                    Categories
-                                </span>
-
-                                <strong>
-                                    {
-                                        categories
-                                    }
-                                </strong>
-
-                                <p
-                                    style={{
-                                        marginTop:
-                                            "10px",
-                                        color:
-                                            "var(--muted-text)",
-                                        fontSize:
-                                            "10px",
-                                    }}
-                                >
-                                    Product groups
-                                </p>
-
-                            </div>
-
-
-                            {/* Rating */}
-
-                            <div className="admin-stat-card">
-
-                                <span>
-                                    Avg. Rating
-                                </span>
-
-                                <strong>
-                                    {
-                                        averageRating
-                                    }
-                                </strong>
-
-                                <p
-                                    style={{
-                                        marginTop:
-                                            "10px",
-                                        color:
-                                            "var(--muted-text)",
-                                        fontSize:
-                                            "10px",
-                                    }}
-                                >
-                                    ★ Product rating
-                                </p>
-
-                            </div>
-
-                        </section>
-
-
-                        {/* =================================
-                            ANALYTICS GRID
-                        ================================= */}
-
-                        <section
-                            style={{
-                                display:
-                                    "grid",
-                                gridTemplateColumns:
-                                    "minmax(0, 1.7fr) minmax(280px, 0.8fr)",
-                                gap: "16px",
-                                marginBottom:
-                                    "35px",
-                            }}
-                        >
-
-                            {/* SALES OVERVIEW */}
+                            {/* Welcome */}
 
                             <div
                                 style={{
-                                    background:
-                                        "var(--milk)",
-                                    border:
-                                        "1px solid var(--light-border)",
-                                    borderRadius:
-                                        "var(--radius-xl)",
-                                    padding:
-                                        "28px",
-                                    minHeight:
-                                        "320px",
+                                    display:
+                                        "flex",
+                                    alignItems:
+                                        "flex-end",
+                                    justifyContent:
+                                        "space-between",
+                                    gap:
+                                        "30px",
+                                    marginBottom:
+                                        "42px",
                                 }}
                             >
 
-                                <div
-                                    style={{
-                                        display:
-                                            "flex",
-                                        justifyContent:
-                                            "space-between",
-                                        alignItems:
-                                            "flex-start",
-                                        marginBottom:
-                                            "28px",
-                                    }}
-                                >
+                                <div>
 
-                                    <div>
+                                    <p className="section-eyebrow">
+                                        GLOWCARE
+                                        ADMIN
+                                    </p>
 
-                                        <p className="section-eyebrow">
-                                            PERFORMANCE
-                                        </p>
-
-                                        <h2
+                                    <h1
+                                        style={{
+                                            margin:
+                                                "8px 0 0",
+                                            color:
+                                                "var(--espresso-brown)",
+                                            fontSize:
+                                                "clamp(42px, 5vw, 68px)",
+                                            lineHeight:
+                                                "0.95",
+                                            letterSpacing:
+                                                "-3px",
+                                            fontWeight:
+                                                "500",
+                                        }}
+                                    >
+                                        Good morning,
+                                        <span
                                             style={{
-                                                marginTop:
-                                                    "7px",
+                                                display:
+                                                    "block",
                                                 color:
-                                                    "var(--espresso-brown)",
+                                                    "var(--dusty-rose)",
                                                 fontFamily:
                                                     "Georgia, serif",
-                                                fontSize:
-                                                    "28px",
+                                                fontStyle:
+                                                    "italic",
                                                 fontWeight:
                                                     "400",
                                             }}
                                         >
-                                            Sales
-                                            overview
-                                        </h2>
+                                            Admin.
+                                        </span>
+                                    </h1>
 
-                                    </div>
-
-                                    <span
+                                    <p
                                         style={{
-                                            padding:
-                                                "7px 11px",
-                                            border:
-                                                "1px solid var(--light-border)",
-                                            borderRadius:
-                                                "var(--radius-pill)",
+                                            marginTop:
+                                                "18px",
+                                            color:
+                                                "var(--muted-text)",
+                                            fontSize:
+                                                "13px",
+                                        }}
+                                    >
+                                        Here's what's
+                                        happening with
+                                        your GlowCare
+                                        store.
+                                    </p>
+
+                                </div>
+
+
+                                <button
+                                    className="admin-add-button"
+                                    type="button"
+                                    onClick={() => {
+                                        setActiveSection(
+                                            "products"
+                                        );
+
+                                        openAddForm();
+                                    }}
+                                >
+                                    + Add Product
+                                </button>
+
+                            </div>
+
+
+                            {/* =================================
+                            STAT CARDS
+                        ================================= */}
+
+                            <section
+                                style={{
+                                    display:
+                                        "grid",
+                                    gridTemplateColumns:
+                                        "repeat(4, minmax(0, 1fr))",
+                                    gap: "14px",
+                                    marginBottom:
+                                        "35px",
+                                }}
+                            >
+
+                                {/* Products */}
+
+                                <div className="admin-stat-card">
+
+                                    <span>
+                                        Products
+                                    </span>
+
+                                    <strong>
+                                        {
+                                            totalProducts
+                                        }
+                                    </strong>
+
+                                    <p
+                                        style={{
+                                            marginTop:
+                                                "10px",
                                             color:
                                                 "var(--muted-text)",
                                             fontSize:
                                                 "10px",
                                         }}
                                     >
-                                        Last 7 months
+                                        In your
+                                        catalog
+                                    </p>
+
+                                </div>
+
+
+                                {/* Stock */}
+
+                                <div className="admin-stat-card">
+
+                                    <span>
+                                        Total Stock
                                     </span>
 
-                                </div>
+                                    <strong>
+                                        {
+                                            totalStock
+                                        }
+                                    </strong>
 
-
-                                {/* CHART */}
-
-                                <div
-                                    style={{
-                                        height:
-                                            "195px",
-                                        display:
-                                            "flex",
-                                        alignItems:
-                                            "flex-end",
-                                        gap:
-                                            "clamp(8px, 2vw, 22px)",
-                                        padding:
-                                            "0 5px",
-                                        borderBottom:
-                                            "1px solid var(--light-border)",
-                                    }}
-                                >
-
-                                    {[
-                                        34,
-                                        48,
-                                        42,
-                                        66,
-                                        55,
-                                        78,
-                                        92,
-                                    ].map(
-                                        (
-                                            value,
-                                            index
-                                        ) => (
-                                            <div
-                                                key={
-                                                    index
-                                                }
-                                                style={{
-                                                    flex:
-                                                        1,
-                                                    height:
-                                                        "100%",
-                                                    display:
-                                                        "flex",
-                                                    flexDirection:
-                                                        "column",
-                                                    justifyContent:
-                                                        "flex-end",
-                                                    alignItems:
-                                                        "center",
-                                                    gap:
-                                                        "8px",
-                                                }}
-                                            >
-
-                                                <div
-                                                    style={{
-                                                        width:
-                                                            "min(34px, 75%)",
-                                                        height: `${value}%`,
-                                                        background:
-                                                            index ===
-                                                            6
-                                                                ? "var(--espresso-brown)"
-                                                                : "var(--dusty-rose)",
-                                                        borderRadius:
-                                                            "6px 6px 0 0",
-                                                        opacity:
-                                                            index ===
-                                                            6
-                                                                ? 1
-                                                                : 0.72,
-                                                    }}
-                                                />
-
-                                            </div>
-                                        )
-                                    )}
+                                    <p
+                                        style={{
+                                            marginTop:
+                                                "10px",
+                                            color:
+                                                "var(--muted-text)",
+                                            fontSize:
+                                                "10px",
+                                        }}
+                                    >
+                                        Units available
+                                    </p>
 
                                 </div>
 
 
-                                {/* MONTHS */}
+                                {/* Categories */}
 
-                                <div
-                                    style={{
-                                        display:
-                                            "grid",
-                                        gridTemplateColumns:
-                                            "repeat(7, 1fr)",
-                                        gap:
-                                            "8px",
-                                        marginTop:
-                                            "10px",
-                                    }}
-                                >
+                                <div className="admin-stat-card">
 
-                                    {[
-                                        "Feb",
-                                        "Mar",
-                                        "Apr",
-                                        "May",
-                                        "Jun",
-                                        "Jul",
-                                        "Aug",
-                                    ].map(
-                                        (
-                                            month
-                                        ) => (
-                                            <span
-                                                key={
-                                                    month
-                                                }
-                                                style={{
-                                                    textAlign:
-                                                        "center",
-                                                    color:
-                                                        "var(--muted-text)",
-                                                    fontSize:
-                                                        "9px",
-                                                }}
-                                            >
-                                                {
-                                                    month
-                                                }
-                                            </span>
-                                        )
-                                    )}
+                                    <span>
+                                        Categories
+                                    </span>
+
+                                    <strong>
+                                        {
+                                            categories
+                                        }
+                                    </strong>
+
+                                    <p
+                                        style={{
+                                            marginTop:
+                                                "10px",
+                                            color:
+                                                "var(--muted-text)",
+                                            fontSize:
+                                                "10px",
+                                        }}
+                                    >
+                                        Product groups
+                                    </p>
 
                                 </div>
 
-                            </div>
+
+                                {/* Rating */}
+
+                                <div className="admin-stat-card">
+
+                                    <span>
+                                        Avg. Rating
+                                    </span>
+
+                                    <strong>
+                                        {
+                                            averageRating
+                                        }
+                                    </strong>
+
+                                    <p
+                                        style={{
+                                            marginTop:
+                                                "10px",
+                                            color:
+                                                "var(--muted-text)",
+                                            fontSize:
+                                                "10px",
+                                        }}
+                                    >
+                                        ★ Product rating
+                                    </p>
+
+                                </div>
+
+                            </section>
 
 
-                            {/* ORDER STATUS */}
+                            {/* =================================
+                            ANALYTICS GRID
+                        ================================= */}
 
-                            <div
+                            <section
                                 style={{
-                                    background:
-                                        "var(--milk)",
-                                    border:
-                                        "1px solid var(--light-border)",
-                                    borderRadius:
-                                        "var(--radius-xl)",
-                                    padding:
-                                        "28px",
-                                    minHeight:
-                                        "320px",
+                                    display:
+                                        "grid",
+                                    gridTemplateColumns:
+                                        "minmax(0, 1.7fr) minmax(280px, 0.8fr)",
+                                    gap: "16px",
+                                    marginBottom:
+                                        "35px",
                                 }}
                             >
 
-                                <p className="section-eyebrow">
-                                    ORDERS
-                                </p>
-
-                                <h2
-                                    style={{
-                                        marginTop:
-                                            "7px",
-                                        color:
-                                            "var(--espresso-brown)",
-                                        fontFamily:
-                                            "Georgia, serif",
-                                        fontSize:
-                                            "28px",
-                                        fontWeight:
-                                            "400",
-                                    }}
-                                >
-                                    Order status
-                                </h2>
-
-
-                                {/* DONUT */}
+                                {/* SALES OVERVIEW */}
 
                                 <div
                                     style={{
-                                        display:
-                                            "flex",
-                                        alignItems:
-                                            "center",
-                                        justifyContent:
-                                            "center",
-                                        margin:
-                                            "28px 0",
+                                        background:
+                                            "var(--milk)",
+                                        border:
+                                            "1px solid var(--light-border)",
+                                        borderRadius:
+                                            "var(--radius-xl)",
+                                        padding:
+                                            "28px",
+                                        minHeight:
+                                            "320px",
                                     }}
                                 >
 
                                     <div
                                         style={{
-                                            width:
-                                                "135px",
+                                            display:
+                                                "flex",
+                                            justifyContent:
+                                                "space-between",
+                                            alignItems:
+                                                "flex-start",
+                                            marginBottom:
+                                                "28px",
+                                        }}
+                                    >
+
+                                        <div>
+
+                                            <p className="section-eyebrow">
+                                                PERFORMANCE
+                                            </p>
+
+                                            <h2
+                                                style={{
+                                                    marginTop:
+                                                        "7px",
+                                                    color:
+                                                        "var(--espresso-brown)",
+                                                    fontFamily:
+                                                        "Georgia, serif",
+                                                    fontSize:
+                                                        "28px",
+                                                    fontWeight:
+                                                        "400",
+                                                }}
+                                            >
+                                                Sales
+                                                overview
+                                            </h2>
+
+                                        </div>
+
+                                        <span
+                                            style={{
+                                                padding:
+                                                    "7px 11px",
+                                                border:
+                                                    "1px solid var(--light-border)",
+                                                borderRadius:
+                                                    "var(--radius-pill)",
+                                                color:
+                                                    "var(--muted-text)",
+                                                fontSize:
+                                                    "10px",
+                                            }}
+                                        >
+                                            Last 7 months
+                                        </span>
+
+                                    </div>
+
+
+                                    {/* CHART */}
+
+                                    <div
+                                        style={{
                                             height:
-                                                "135px",
-                                            borderRadius:
-                                                "50%",
-                                            background:
-                                                "conic-gradient(var(--dusty-rose) 0 42%, var(--cocoa-taupe) 42% 70%, var(--blush-oat) 70% 100%)",
+                                                "195px",
+                                            display:
+                                                "flex",
+                                            alignItems:
+                                                "flex-end",
+                                            gap:
+                                                "clamp(8px, 2vw, 22px)",
+                                            padding:
+                                                "0 5px",
+                                            borderBottom:
+                                                "1px solid var(--light-border)",
+                                        }}
+                                    >
+
+                                        {[
+                                            34,
+                                            48,
+                                            42,
+                                            66,
+                                            55,
+                                            78,
+                                            92,
+                                        ].map(
+                                            (
+                                                value,
+                                                index
+                                            ) => (
+                                                <div
+                                                    key={
+                                                        index
+                                                    }
+                                                    style={{
+                                                        flex:
+                                                            1,
+                                                        height:
+                                                            "100%",
+                                                        display:
+                                                            "flex",
+                                                        flexDirection:
+                                                            "column",
+                                                        justifyContent:
+                                                            "flex-end",
+                                                        alignItems:
+                                                            "center",
+                                                        gap:
+                                                            "8px",
+                                                    }}
+                                                >
+
+                                                    <div
+                                                        style={{
+                                                            width:
+                                                                "min(34px, 75%)",
+                                                            height: `${value}%`,
+                                                            background:
+                                                                index ===
+                                                                    6
+                                                                    ? "var(--espresso-brown)"
+                                                                    : "var(--dusty-rose)",
+                                                            borderRadius:
+                                                                "6px 6px 0 0",
+                                                            opacity:
+                                                                index ===
+                                                                    6
+                                                                    ? 1
+                                                                    : 0.72,
+                                                        }}
+                                                    />
+
+                                                </div>
+                                            )
+                                        )}
+
+                                    </div>
+
+
+                                    {/* MONTHS */}
+
+                                    <div
+                                        style={{
+                                            display:
+                                                "grid",
+                                            gridTemplateColumns:
+                                                "repeat(7, 1fr)",
+                                            gap:
+                                                "8px",
+                                            marginTop:
+                                                "10px",
+                                        }}
+                                    >
+
+                                        {[
+                                            "Feb",
+                                            "Mar",
+                                            "Apr",
+                                            "May",
+                                            "Jun",
+                                            "Jul",
+                                            "Aug",
+                                        ].map(
+                                            (
+                                                month
+                                            ) => (
+                                                <span
+                                                    key={
+                                                        month
+                                                    }
+                                                    style={{
+                                                        textAlign:
+                                                            "center",
+                                                        color:
+                                                            "var(--muted-text)",
+                                                        fontSize:
+                                                            "9px",
+                                                    }}
+                                                >
+                                                    {
+                                                        month
+                                                    }
+                                                </span>
+                                            )
+                                        )}
+
+                                    </div>
+
+                                </div>
+
+
+                                {/* ORDER STATUS */}
+
+                                <div
+                                    style={{
+                                        background:
+                                            "var(--milk)",
+                                        border:
+                                            "1px solid var(--light-border)",
+                                        borderRadius:
+                                            "var(--radius-xl)",
+                                        padding:
+                                            "28px",
+                                        minHeight:
+                                            "320px",
+                                    }}
+                                >
+
+                                    <p className="section-eyebrow">
+                                        ORDERS
+                                    </p>
+
+                                    <h2
+                                        style={{
+                                            marginTop:
+                                                "7px",
+                                            color:
+                                                "var(--espresso-brown)",
+                                            fontFamily:
+                                                "Georgia, serif",
+                                            fontSize:
+                                                "28px",
+                                            fontWeight:
+                                                "400",
+                                        }}
+                                    >
+                                        Order status
+                                    </h2>
+
+
+                                    {/* DONUT */}
+
+                                    <div
+                                        style={{
                                             display:
                                                 "flex",
                                             alignItems:
                                                 "center",
                                             justifyContent:
                                                 "center",
+                                            margin:
+                                                "28px 0",
                                         }}
                                     >
 
                                         <div
                                             style={{
                                                 width:
-                                                    "78px",
+                                                    "135px",
                                                 height:
-                                                    "78px",
+                                                    "135px",
                                                 borderRadius:
                                                     "50%",
                                                 background:
-                                                    "var(--milk)",
+                                                    "conic-gradient(var(--dusty-rose) 0 42%, var(--cocoa-taupe) 42% 70%, var(--blush-oat) 70% 100%)",
                                                 display:
                                                     "flex",
                                                 alignItems:
                                                     "center",
                                                 justifyContent:
                                                     "center",
-                                                flexDirection:
-                                                    "column",
                                             }}
                                         >
 
-                                            <strong
+                                            <div
                                                 style={{
-                                                    color:
-                                                        "var(--espresso-brown)",
-                                                    fontFamily:
-                                                        "Georgia, serif",
-                                                    fontSize:
-                                                        "21px",
-                                                    fontWeight:
-                                                        "400",
+                                                    width:
+                                                        "78px",
+                                                    height:
+                                                        "78px",
+                                                    borderRadius:
+                                                        "50%",
+                                                    background:
+                                                        "var(--milk)",
+                                                    display:
+                                                        "flex",
+                                                    alignItems:
+                                                        "center",
+                                                    justifyContent:
+                                                        "center",
+                                                    flexDirection:
+                                                        "column",
                                                 }}
                                             >
-                                                —
-                                            </strong>
 
-                                            <span
-                                                style={{
-                                                    color:
-                                                        "var(--muted-text)",
-                                                    fontSize:
-                                                        "8px",
-                                                }}
-                                            >
-                                                orders
+                                                <strong
+                                                    style={{
+                                                        color:
+                                                            "var(--espresso-brown)",
+                                                        fontFamily:
+                                                            "Georgia, serif",
+                                                        fontSize:
+                                                            "21px",
+                                                        fontWeight:
+                                                            "400",
+                                                    }}
+                                                >
+                                                    —
+                                                </strong>
+
+                                                <span
+                                                    style={{
+                                                        color:
+                                                            "var(--muted-text)",
+                                                        fontSize:
+                                                            "8px",
+                                                    }}
+                                                >
+                                                    orders
+                                                </span>
+
+                                            </div>
+
+                                        </div>
+
+                                    </div>
+
+
+                                    {/* LEGEND */}
+
+                                    <div
+                                        style={{
+                                            display:
+                                                "flex",
+                                            flexDirection:
+                                                "column",
+                                            gap:
+                                                "10px",
+                                        }}
+                                    >
+
+                                        <div
+                                            style={{
+                                                display:
+                                                    "flex",
+                                                justifyContent:
+                                                    "space-between",
+                                                alignItems:
+                                                    "center",
+                                                color:
+                                                    "var(--muted-text)",
+                                                fontSize:
+                                                    "11px",
+                                            }}
+                                        >
+
+                                            <span>
+                                                <i
+                                                    style={{
+                                                        display:
+                                                            "inline-block",
+                                                        width:
+                                                            "8px",
+                                                        height:
+                                                            "8px",
+                                                        borderRadius:
+                                                            "50%",
+                                                        background:
+                                                            "var(--dusty-rose)",
+                                                        marginRight:
+                                                            "8px",
+                                                    }}
+                                                />
+                                                Pending
+                                            </span>
+
+                                            <span>
+                                                —
+                                            </span>
+
+                                        </div>
+
+
+                                        <div
+                                            style={{
+                                                display:
+                                                    "flex",
+                                                justifyContent:
+                                                    "space-between",
+                                                alignItems:
+                                                    "center",
+                                                color:
+                                                    "var(--muted-text)",
+                                                fontSize:
+                                                    "11px",
+                                            }}
+                                        >
+
+                                            <span>
+                                                <i
+                                                    style={{
+                                                        display:
+                                                            "inline-block",
+                                                        width:
+                                                            "8px",
+                                                        height:
+                                                            "8px",
+                                                        borderRadius:
+                                                            "50%",
+                                                        background:
+                                                            "var(--cocoa-taupe)",
+                                                        marginRight:
+                                                            "8px",
+                                                    }}
+                                                />
+                                                Processing
+                                            </span>
+
+                                            <span>
+                                                —
+                                            </span>
+
+                                        </div>
+
+
+                                        <div
+                                            style={{
+                                                display:
+                                                    "flex",
+                                                justifyContent:
+                                                    "space-between",
+                                                alignItems:
+                                                    "center",
+                                                color:
+                                                    "var(--muted-text)",
+                                                fontSize:
+                                                    "11px",
+                                            }}
+                                        >
+
+                                            <span>
+                                                <i
+                                                    style={{
+                                                        display:
+                                                            "inline-block",
+                                                        width:
+                                                            "8px",
+                                                        height:
+                                                            "8px",
+                                                        borderRadius:
+                                                            "50%",
+                                                        background:
+                                                            "var(--blush-oat)",
+                                                        marginRight:
+                                                            "8px",
+                                                    }}
+                                                />
+                                                Delivered
+                                            </span>
+
+                                            <span>
+                                                —
                                             </span>
 
                                         </div>
@@ -1715,449 +2099,34 @@ const totalRevenue =
 
                                 </div>
 
-
-                                {/* LEGEND */}
-
-                                <div
-                                    style={{
-                                        display:
-                                            "flex",
-                                        flexDirection:
-                                            "column",
-                                        gap:
-                                            "10px",
-                                    }}
-                                >
-
-                                    <div
-                                        style={{
-                                            display:
-                                                "flex",
-                                            justifyContent:
-                                                "space-between",
-                                            alignItems:
-                                                "center",
-                                            color:
-                                                "var(--muted-text)",
-                                            fontSize:
-                                                "11px",
-                                        }}
-                                    >
-
-                                        <span>
-                                            <i
-                                                style={{
-                                                    display:
-                                                        "inline-block",
-                                                    width:
-                                                        "8px",
-                                                    height:
-                                                        "8px",
-                                                    borderRadius:
-                                                        "50%",
-                                                    background:
-                                                        "var(--dusty-rose)",
-                                                    marginRight:
-                                                        "8px",
-                                                }}
-                                            />
-                                            Pending
-                                        </span>
-
-                                        <span>
-                                            —
-                                        </span>
-
-                                    </div>
+                            </section>
 
 
-                                    <div
-                                        style={{
-                                            display:
-                                                "flex",
-                                            justifyContent:
-                                                "space-between",
-                                            alignItems:
-                                                "center",
-                                            color:
-                                                "var(--muted-text)",
-                                            fontSize:
-                                                "11px",
-                                        }}
-                                    >
-
-                                        <span>
-                                            <i
-                                                style={{
-                                                    display:
-                                                        "inline-block",
-                                                    width:
-                                                        "8px",
-                                                    height:
-                                                        "8px",
-                                                    borderRadius:
-                                                        "50%",
-                                                    background:
-                                                        "var(--cocoa-taupe)",
-                                                    marginRight:
-                                                        "8px",
-                                                }}
-                                            />
-                                            Processing
-                                        </span>
-
-                                        <span>
-                                            —
-                                        </span>
-
-                                    </div>
-
-
-                                    <div
-                                        style={{
-                                            display:
-                                                "flex",
-                                            justifyContent:
-                                                "space-between",
-                                            alignItems:
-                                                "center",
-                                            color:
-                                                "var(--muted-text)",
-                                            fontSize:
-                                                "11px",
-                                        }}
-                                    >
-
-                                        <span>
-                                            <i
-                                                style={{
-                                                    display:
-                                                        "inline-block",
-                                                    width:
-                                                        "8px",
-                                                    height:
-                                                        "8px",
-                                                    borderRadius:
-                                                        "50%",
-                                                    background:
-                                                        "var(--blush-oat)",
-                                                    marginRight:
-                                                        "8px",
-                                                }}
-                                            />
-                                            Delivered
-                                        </span>
-
-                                        <span>
-                                            —
-                                        </span>
-
-                                    </div>
-
-                                </div>
-
-                            </div>
-
-                        </section>
-
-
-                        {/* =================================
+                            {/* =================================
                             LOWER DASHBOARD
                         ================================= */}
 
-                        <section
-                            style={{
-                                display:
-                                    "grid",
-                                gridTemplateColumns:
-                                    "minmax(0, 1.5fr) minmax(280px, 0.8fr)",
-                                gap: "16px",
-                            }}
-                        >
-
-                            {/* RECENT PRODUCTS */}
-
-                            <div
+                            <section
                                 style={{
-                                    background:
-                                        "var(--milk)",
-                                    border:
-                                        "1px solid var(--light-border)",
-                                    borderRadius:
-                                        "var(--radius-xl)",
-                                    padding:
-                                        "28px",
+                                    display:
+                                        "grid",
+                                    gridTemplateColumns:
+                                        "minmax(0, 1.5fr) minmax(280px, 0.8fr)",
+                                    gap: "16px",
                                 }}
                             >
 
-                                <div
-                                    style={{
-                                        display:
-                                            "flex",
-                                        justifyContent:
-                                            "space-between",
-                                        alignItems:
-                                            "flex-end",
-                                        marginBottom:
-                                            "22px",
-                                    }}
-                                >
-
-                                    <div>
-
-                                        <p className="section-eyebrow">
-                                            CATALOG
-                                        </p>
-
-                                        <h2
-                                            style={{
-                                                marginTop:
-                                                    "7px",
-                                                color:
-                                                    "var(--espresso-brown)",
-                                                fontFamily:
-                                                    "Georgia, serif",
-                                                fontSize:
-                                                    "28px",
-                                                fontWeight:
-                                                    "400",
-                                            }}
-                                        >
-                                            Recent
-                                            products
-                                        </h2>
-
-                                    </div>
-
-                                    <button
-                                        type="button"
-                                        onClick={() =>
-                                            setActiveSection(
-                                                "products"
-                                            )
-                                        }
-                                        style={{
-                                            border:
-                                                "none",
-                                            background:
-                                                "transparent",
-                                            color:
-                                                "var(--cocoa-taupe)",
-                                            fontSize:
-                                                "11px",
-                                            cursor:
-                                                "pointer",
-                                        }}
-                                    >
-                                        View all →
-                                    </button>
-
-                                </div>
-
+                                {/* RECENT PRODUCTS */}
 
                                 <div
                                     style={{
-                                        display:
-                                            "flex",
-                                        flexDirection:
-                                            "column",
-                                        gap:
-                                            "9px",
-                                    }}
-                                >
-
-                                    {products
-                                        .slice(
-                                            0,
-                                            4
-                                        )
-                                        .map(
-                                            (
-                                                product
-                                            ) => (
-                                                <div
-                                                    key={
-                                                        product._id
-                                                    }
-                                                    style={{
-                                                        display:
-                                                            "grid",
-                                                        gridTemplateColumns:
-                                                            "48px 1fr auto",
-                                                        alignItems:
-                                                            "center",
-                                                        gap:
-                                                            "13px",
-                                                        padding:
-                                                            "10px",
-                                                        border:
-                                                            "1px solid var(--light-border)",
-                                                        borderRadius:
-                                                            "var(--radius-lg)",
-                                                    }}
-                                                >
-
-                                                    <div
-                                                        style={{
-                                                            width:
-                                                                "48px",
-                                                            height:
-                                                                "48px",
-                                                            borderRadius:
-                                                                "9px",
-                                                            background:
-                                                                "var(--blush-oat)",
-                                                            overflow:
-                                                                "hidden",
-                                                        }}
-                                                    >
-
-                                                        <img
-                                                            src={
-                                                                product.image
-                                                            }
-                                                            alt={
-                                                                product.name
-                                                            }
-                                                            style={{
-                                                                width:
-                                                                    "100%",
-                                                                height:
-                                                                    "100%",
-                                                                objectFit:
-                                                                    "contain",
-                                                                padding:
-                                                                    "5px",
-                                                            }}
-                                                        />
-
-                                                    </div>
-
-
-                                                    <div>
-
-                                                        <p
-                                                            style={{
-                                                                margin:
-                                                                    "0 0 4px",
-                                                                color:
-                                                                    "var(--dusty-rose)",
-                                                                fontSize:
-                                                                    "8px",
-                                                                fontWeight:
-                                                                    "600",
-                                                                letterSpacing:
-                                                                    "0.8px",
-                                                                textTransform:
-                                                                    "uppercase",
-                                                            }}
-                                                        >
-                                                            {
-                                                                product.category
-                                                            }
-                                                        </p>
-
-                                                        <strong
-                                                            style={{
-                                                                color:
-                                                                    "var(--espresso-brown)",
-                                                                fontFamily:
-                                                                    "Georgia, serif",
-                                                                fontSize:
-                                                                    "14px",
-                                                                fontWeight:
-                                                                    "400",
-                                                            }}
-                                                        >
-                                                            {
-                                                                product.name
-                                                            }
-                                                        </strong>
-
-                                                    </div>
-
-
-                                                    <span
-                                                        style={{
-                                                            color:
-                                                                "var(--espresso-brown)",
-                                                            fontSize:
-                                                                "12px",
-                                                            fontWeight:
-                                                                "600",
-                                                        }}
-                                                    >
-                                                        ₹
-                                                        {
-                                                            product.price
-                                                        }
-                                                    </span>
-
-                                                </div>
-                                            )
-                                        )}
-
-                                    {products.length ===
-                                        0 && (
-                                        <p
-                                            style={{
-                                                color:
-                                                    "var(--muted-text)",
-                                                fontSize:
-                                                    "12px",
-                                                padding:
-                                                    "20px 0",
-                                            }}
-                                        >
-                                            No products
-                                            added yet.
-                                        </p>
-                                    )}
-
-                                </div>
-
-                            </div>
-
-
-                            {/* INVENTORY HEALTH */}
-
-                            <div
-                                style={{
-                                    background:
-                                        "var(--blush-oat)",
-                                    border:
-                                        "1px solid var(--light-border)",
-                                    borderRadius:
-                                        "var(--radius-xl)",
-                                    padding:
-                                        "28px",
-                                }}
-                            >
-
-                                <p className="section-eyebrow">
-                                    INVENTORY
-                                </p>
-
-                                <h2
-                                    style={{
-                                        marginTop:
-                                            "7px",
-                                        color:
-                                            "var(--espresso-brown)",
-                                        fontFamily:
-                                            "Georgia, serif",
-                                        fontSize:
-                                            "28px",
-                                        fontWeight:
-                                            "400",
-                                    }}
-                                >
-                                    Stock health
-                                </h2>
-
-                                <div
-                                    style={{
-                                        marginTop:
+                                        background:
+                                            "var(--milk)",
+                                        border:
+                                            "1px solid var(--light-border)",
+                                        borderRadius:
+                                            "var(--radius-xl)",
+                                        padding:
                                             "28px",
                                     }}
                                 >
@@ -2168,145 +2137,417 @@ const totalRevenue =
                                                 "flex",
                                             justifyContent:
                                                 "space-between",
+                                            alignItems:
+                                                "flex-end",
                                             marginBottom:
-                                                "8px",
+                                                "22px",
+                                        }}
+                                    >
+
+                                        <div>
+
+                                            <p className="section-eyebrow">
+                                                CATALOG
+                                            </p>
+
+                                            <h2
+                                                style={{
+                                                    marginTop:
+                                                        "7px",
+                                                    color:
+                                                        "var(--espresso-brown)",
+                                                    fontFamily:
+                                                        "Georgia, serif",
+                                                    fontSize:
+                                                        "28px",
+                                                    fontWeight:
+                                                        "400",
+                                                }}
+                                            >
+                                                Recent
+                                                products
+                                            </h2>
+
+                                        </div>
+
+                                        <button
+                                            type="button"
+                                            onClick={() =>
+                                                setActiveSection(
+                                                    "products"
+                                                )
+                                            }
+                                            style={{
+                                                border:
+                                                    "none",
+                                                background:
+                                                    "transparent",
+                                                color:
+                                                    "var(--cocoa-taupe)",
+                                                fontSize:
+                                                    "11px",
+                                                cursor:
+                                                    "pointer",
+                                            }}
+                                        >
+                                            View all →
+                                        </button>
+
+                                    </div>
+
+
+                                    <div
+                                        style={{
+                                            display:
+                                                "flex",
+                                            flexDirection:
+                                                "column",
+                                            gap:
+                                                "9px",
+                                        }}
+                                    >
+
+                                        {products
+                                            .slice(
+                                                0,
+                                                4
+                                            )
+                                            .map(
+                                                (
+                                                    product
+                                                ) => (
+                                                    <div
+                                                        key={
+                                                            product._id
+                                                        }
+                                                        style={{
+                                                            display:
+                                                                "grid",
+                                                            gridTemplateColumns:
+                                                                "48px 1fr auto",
+                                                            alignItems:
+                                                                "center",
+                                                            gap:
+                                                                "13px",
+                                                            padding:
+                                                                "10px",
+                                                            border:
+                                                                "1px solid var(--light-border)",
+                                                            borderRadius:
+                                                                "var(--radius-lg)",
+                                                        }}
+                                                    >
+
+                                                        <div
+                                                            style={{
+                                                                width:
+                                                                    "48px",
+                                                                height:
+                                                                    "48px",
+                                                                borderRadius:
+                                                                    "9px",
+                                                                background:
+                                                                    "var(--blush-oat)",
+                                                                overflow:
+                                                                    "hidden",
+                                                            }}
+                                                        >
+
+                                                            <img
+                                                                src={
+                                                                    product.image
+                                                                }
+                                                                alt={
+                                                                    product.name
+                                                                }
+                                                                style={{
+                                                                    width:
+                                                                        "100%",
+                                                                    height:
+                                                                        "100%",
+                                                                    objectFit:
+                                                                        "contain",
+                                                                    padding:
+                                                                        "5px",
+                                                                }}
+                                                            />
+
+                                                        </div>
+
+
+                                                        <div>
+
+                                                            <p
+                                                                style={{
+                                                                    margin:
+                                                                        "0 0 4px",
+                                                                    color:
+                                                                        "var(--dusty-rose)",
+                                                                    fontSize:
+                                                                        "8px",
+                                                                    fontWeight:
+                                                                        "600",
+                                                                    letterSpacing:
+                                                                        "0.8px",
+                                                                    textTransform:
+                                                                        "uppercase",
+                                                                }}
+                                                            >
+                                                                {
+                                                                    product.category
+                                                                }
+                                                            </p>
+
+                                                            <strong
+                                                                style={{
+                                                                    color:
+                                                                        "var(--espresso-brown)",
+                                                                    fontFamily:
+                                                                        "Georgia, serif",
+                                                                    fontSize:
+                                                                        "14px",
+                                                                    fontWeight:
+                                                                        "400",
+                                                                }}
+                                                            >
+                                                                {
+                                                                    product.name
+                                                                }
+                                                            </strong>
+
+                                                        </div>
+
+
+                                                        <span
+                                                            style={{
+                                                                color:
+                                                                    "var(--espresso-brown)",
+                                                                fontSize:
+                                                                    "12px",
+                                                                fontWeight:
+                                                                    "600",
+                                                            }}
+                                                        >
+                                                            ₹
+                                                            {
+                                                                product.price
+                                                            }
+                                                        </span>
+
+                                                    </div>
+                                                )
+                                            )}
+
+                                        {products.length ===
+                                            0 && (
+                                                <p
+                                                    style={{
+                                                        color:
+                                                            "var(--muted-text)",
+                                                        fontSize:
+                                                            "12px",
+                                                        padding:
+                                                            "20px 0",
+                                                    }}
+                                                >
+                                                    No products
+                                                    added yet.
+                                                </p>
+                                            )}
+
+                                    </div>
+
+                                </div>
+
+
+                                {/* INVENTORY HEALTH */}
+
+                                <div
+                                    style={{
+                                        background:
+                                            "var(--blush-oat)",
+                                        border:
+                                            "1px solid var(--light-border)",
+                                        borderRadius:
+                                            "var(--radius-xl)",
+                                        padding:
+                                            "28px",
+                                    }}
+                                >
+
+                                    <p className="section-eyebrow">
+                                        INVENTORY
+                                    </p>
+
+                                    <h2
+                                        style={{
+                                            marginTop:
+                                                "7px",
+                                            color:
+                                                "var(--espresso-brown)",
+                                            fontFamily:
+                                                "Georgia, serif",
+                                            fontSize:
+                                                "28px",
+                                            fontWeight:
+                                                "400",
+                                        }}
+                                    >
+                                        Stock health
+                                    </h2>
+
+                                    <div
+                                        style={{
+                                            marginTop:
+                                                "28px",
+                                        }}
+                                    >
+
+                                        <div
+                                            style={{
+                                                display:
+                                                    "flex",
+                                                justifyContent:
+                                                    "space-between",
+                                                marginBottom:
+                                                    "8px",
+                                            }}
+                                        >
+
+                                            <span
+                                                style={{
+                                                    color:
+                                                        "var(--muted-text)",
+                                                    fontSize:
+                                                        "11px",
+                                                }}
+                                            >
+                                                Healthy
+                                                inventory
+                                            </span>
+
+                                            <strong
+                                                style={{
+                                                    color:
+                                                        "var(--espresso-brown)",
+                                                    fontSize:
+                                                        "12px",
+                                                }}
+                                            >
+                                                {Math.max(
+                                                    0,
+                                                    totalProducts -
+                                                    lowStock
+                                                )}
+                                            </strong>
+
+                                        </div>
+
+
+                                        <div
+                                            style={{
+                                                height:
+                                                    "7px",
+                                                background:
+                                                    "var(--milk)",
+                                                borderRadius:
+                                                    "10px",
+                                                overflow:
+                                                    "hidden",
+                                            }}
+                                        >
+
+                                            <div
+                                                style={{
+                                                    width:
+                                                        totalProducts
+                                                            ? `${Math.max(
+                                                                0,
+                                                                ((totalProducts -
+                                                                    lowStock) /
+                                                                    totalProducts) *
+                                                                100
+                                                            )}%`
+                                                            : "0%",
+                                                    height:
+                                                        "100%",
+                                                    background:
+                                                        "var(--cocoa-taupe)",
+                                                    borderRadius:
+                                                        "10px",
+                                                }}
+                                            />
+
+                                        </div>
+
+                                    </div>
+
+
+                                    <div
+                                        style={{
+                                            marginTop:
+                                                "25px",
+                                            paddingTop:
+                                                "20px",
+                                            borderTop:
+                                                "1px solid rgba(100,80,70,0.12)",
                                         }}
                                     >
 
                                         <span
                                             style={{
+                                                display:
+                                                    "block",
                                                 color:
                                                     "var(--muted-text)",
                                                 fontSize:
-                                                    "11px",
+                                                    "10px",
+                                                marginBottom:
+                                                    "5px",
                                             }}
                                         >
-                                            Healthy
-                                            inventory
+                                            LOW STOCK
                                         </span>
 
                                         <strong
                                             style={{
                                                 color:
                                                     "var(--espresso-brown)",
+                                                fontFamily:
+                                                    "Georgia, serif",
                                                 fontSize:
-                                                    "12px",
+                                                    "34px",
+                                                fontWeight:
+                                                    "400",
                                             }}
                                         >
-                                            {Math.max(
-                                                0,
-                                                totalProducts -
-                                                    lowStock
-                                            )}
+                                            {
+                                                lowStock
+                                            }
                                         </strong>
 
-                                    </div>
-
-
-                                    <div
-                                        style={{
-                                            height:
-                                                "7px",
-                                            background:
-                                                "var(--milk)",
-                                            borderRadius:
-                                                "10px",
-                                            overflow:
-                                                "hidden",
-                                        }}
-                                    >
-
-                                        <div
+                                        <p
                                             style={{
-                                                width:
-                                                    totalProducts
-                                                        ? `${Math.max(
-                                                              0,
-                                                              ((totalProducts -
-                                                                  lowStock) /
-                                                                  totalProducts) *
-                                                                  100
-                                                          )}%`
-                                                        : "0%",
-                                                height:
-                                                    "100%",
-                                                background:
-                                                    "var(--cocoa-taupe)",
-                                                borderRadius:
+                                                marginTop:
+                                                    "5px",
+                                                color:
+                                                    "var(--muted-text)",
+                                                fontSize:
                                                     "10px",
                                             }}
-                                        />
+                                        >
+                                            products need
+                                            attention
+                                        </p>
 
                                     </div>
 
                                 </div>
 
+                            </section>
 
-                                <div
-                                    style={{
-                                        marginTop:
-                                            "25px",
-                                        paddingTop:
-                                            "20px",
-                                        borderTop:
-                                            "1px solid rgba(100,80,70,0.12)",
-                                    }}
-                                >
-
-                                    <span
-                                        style={{
-                                            display:
-                                                "block",
-                                            color:
-                                                "var(--muted-text)",
-                                            fontSize:
-                                                "10px",
-                                            marginBottom:
-                                                "5px",
-                                        }}
-                                    >
-                                        LOW STOCK
-                                    </span>
-
-                                    <strong
-                                        style={{
-                                            color:
-                                                "var(--espresso-brown)",
-                                            fontFamily:
-                                                "Georgia, serif",
-                                            fontSize:
-                                                "34px",
-                                            fontWeight:
-                                                "400",
-                                        }}
-                                    >
-                                        {
-                                            lowStock
-                                        }
-                                    </strong>
-
-                                    <p
-                                        style={{
-                                            marginTop:
-                                                "5px",
-                                            color:
-                                                "var(--muted-text)",
-                                            fontSize:
-                                                "10px",
-                                        }}
-                                    >
-                                        products need
-                                        attention
-                                    </p>
-
-                                </div>
-
-                            </div>
-
-                        </section>
-
-                    </div>
-                )}
+                        </div>
+                    )}
 
 
                 {/* =================================
@@ -2314,1181 +2555,1581 @@ const totalRevenue =
                 ================================= */}
 
                 {activeSection ===
-    "orders" && (
-    <div
-        style={{
-            padding:
-                "50px 5% 90px",
-        }}
-    >
+                    "orders" && (
+                        <div
+                            style={{
+                                padding:
+                                    "50px 5% 90px",
+                            }}
+                        >
 
-        {/* =================================
+                            {/* =================================
             ORDERS HEADER
         ================================= */}
 
-        <div
-            style={{
-                display: "flex",
-                alignItems:
-                    "flex-end",
-                justifyContent:
-                    "space-between",
-                gap: "30px",
-                marginBottom:
-                    "40px",
-            }}
-        >
+                            <div
+                                style={{
+                                    display: "flex",
+                                    alignItems:
+                                        "flex-end",
+                                    justifyContent:
+                                        "space-between",
+                                    gap: "30px",
+                                    marginBottom:
+                                        "40px",
+                                }}
+                            >
 
-            <div>
+                                <div>
 
-                <p className="section-eyebrow">
-                    GLOWCARE ADMIN
-                </p>
+                                    <p className="section-eyebrow">
+                                        GLOWCARE ADMIN
+                                    </p>
 
-                <h1
-                    style={{
-                        margin:
-                            "8px 0 0",
-                        color:
-                            "var(--espresso-brown)",
-                        fontSize:
-                            "clamp(42px, 5vw, 64px)",
-                        lineHeight:
-                            "0.95",
-                        letterSpacing:
-                            "-3px",
-                        fontWeight:
-                            "500",
-                    }}
-                >
-                    Order
-                    <span
-                        style={{
-                            display:
-                                "block",
-                            color:
-                                "var(--dusty-rose)",
-                            fontFamily:
-                                "Georgia, serif",
-                            fontStyle:
-                                "italic",
-                            fontWeight:
-                                "400",
-                        }}
-                    >
-                        management.
-                    </span>
-                </h1>
+                                    <h1
+                                        style={{
+                                            margin:
+                                                "8px 0 0",
+                                            color:
+                                                "var(--espresso-brown)",
+                                            fontSize:
+                                                "clamp(42px, 5vw, 64px)",
+                                            lineHeight:
+                                                "0.95",
+                                            letterSpacing:
+                                                "-3px",
+                                            fontWeight:
+                                                "500",
+                                        }}
+                                    >
+                                        Order
+                                        <span
+                                            style={{
+                                                display:
+                                                    "block",
+                                                color:
+                                                    "var(--dusty-rose)",
+                                                fontFamily:
+                                                    "Georgia, serif",
+                                                fontStyle:
+                                                    "italic",
+                                                fontWeight:
+                                                    "400",
+                                            }}
+                                        >
+                                            management.
+                                        </span>
+                                    </h1>
 
-            </div>
+                                </div>
 
-            <div
-                style={{
-                    color:
-                        "var(--muted-text)",
-                    fontSize:
-                        "12px",
-                }}
-            >
-                {totalOrders} total orders
-            </div>
+                                <div
+                                    style={{
+                                        color:
+                                            "var(--muted-text)",
+                                        fontSize:
+                                            "12px",
+                                    }}
+                                >
+                                    {totalOrders} total orders
+                                </div>
 
-        </div>
+                            </div>
 
 
-        {/* =================================
+                            {/* =================================
             ORDER STATS
         ================================= */}
 
-        <section
-            style={{
-                display: "grid",
-                gridTemplateColumns:
-                    "repeat(4, minmax(0, 1fr))",
-                gap: "14px",
-                marginBottom:
-                    "30px",
-            }}
-        >
+                            <section
+                                style={{
+                                    display: "grid",
+                                    gridTemplateColumns:
+                                        "repeat(4, minmax(0, 1fr))",
+                                    gap: "14px",
+                                    marginBottom:
+                                        "30px",
+                                }}
+                            >
 
-            <div className="admin-stat-card">
-                <span>
-                    Total Orders
-                </span>
+                                <div className="admin-stat-card">
+                                    <span>
+                                        Total Orders
+                                    </span>
 
-                <strong>
-                    {totalOrders}
-                </strong>
-            </div>
-
-
-            <div className="admin-stat-card">
-                <span>
-                    Pending
-                </span>
-
-                <strong>
-                    {pendingOrders}
-                </strong>
-            </div>
+                                    <strong>
+                                        {totalOrders}
+                                    </strong>
+                                </div>
 
 
-            <div className="admin-stat-card">
-                <span>
-                    Shipped
-                </span>
+                                <div className="admin-stat-card">
+                                    <span>
+                                        Pending
+                                    </span>
 
-                <strong>
-                    {shippedOrders}
-                </strong>
-            </div>
-
-
-            <div className="admin-stat-card">
-                <span>
-                    Revenue
-                </span>
-
-                <strong
-                    style={{
-                        fontSize:
-                            "30px",
-                    }}
-                >
-                    ₹
-                    {totalRevenue.toLocaleString(
-                        "en-IN"
-                    )}
-                </strong>
-            </div>
-
-        </section>
+                                    <strong>
+                                        {pendingOrders}
+                                    </strong>
+                                </div>
 
 
-        {/* =================================
+                                <div className="admin-stat-card">
+                                    <span>
+                                        Shipped
+                                    </span>
+
+                                    <strong>
+                                        {shippedOrders}
+                                    </strong>
+                                </div>
+
+
+                                <div className="admin-stat-card">
+                                    <span>
+                                        Revenue
+                                    </span>
+
+                                    <strong
+                                        style={{
+                                            fontSize:
+                                                "30px",
+                                        }}
+                                    >
+                                        ₹
+                                        {totalRevenue.toLocaleString(
+                                            "en-IN"
+                                        )}
+                                    </strong>
+                                </div>
+
+                            </section>
+
+
+                            {/* =================================
             ORDER TABLE
         ================================= */}
 
-        <section className="admin-products">
+                            <section className="admin-products">
 
-            <div
-                className="admin-section-heading"
-            >
-
-                <div>
-
-                    <p className="section-eyebrow">
-                        CUSTOMER ORDERS
-                    </p>
-
-                    <h2>
-                        Recent orders
-                    </h2>
-
-                </div>
-
-                <span>
-                    {orders.length} orders
-                </span>
-
-            </div>
-
-
-            {ordersLoading ? (
-
-                <div
-                    className="admin-product-form"
-                    style={{
-                        textAlign:
-                            "center",
-                        marginTop:
-                            "20px",
-                    }}
-                >
-                    <p className="admin-loading">
-                        Loading orders...
-                    </p>
-                </div>
-
-            ) : orders.length === 0 ? (
-
-                <div
-                    className="admin-product-form"
-                    style={{
-                        textAlign:
-                            "center",
-                        marginTop:
-                            "20px",
-                    }}
-                >
-
-                    <p className="section-eyebrow">
-                        NO ORDERS
-                    </p>
-
-                    <h2
-                        style={{
-                            marginTop:
-                                "10px",
-                            color:
-                                "var(--espresso-brown)",
-                            fontFamily:
-                                "Georgia, serif",
-                            fontWeight:
-                                "400",
-                        }}
-                    >
-                        Your store is
-                        waiting for its
-                        first order.
-                    </h2>
-
-                </div>
-
-            ) : (
-
-                <div
-                    style={{
-                        display:
-                            "flex",
-                        flexDirection:
-                            "column",
-                        gap: "10px",
-                    }}
-                >
-
-                    {orders.map(
-                        (order) => {
-
-                            const customerName =
-                                order
-                                    .shippingAddress
-                                    ?.name ||
-                                order.user
-                                    ?.name ||
-                                "Customer";
-
-                            const date =
-                                new Date(
-                                    order.createdAt
-                                ).toLocaleDateString(
-                                    "en-IN",
-                                    {
-                                        day: "2-digit",
-                                        month:
-                                            "short",
-                                        year:
-                                            "numeric",
-                                    }
-                                );
-
-                            return (
                                 <div
-                                    key={
-                                        order._id
-                                    }
-                                    style={{
-                                        background:
-                                            "var(--milk)",
-                                        border:
-                                            "1px solid var(--light-border)",
-                                        borderRadius:
-                                            "var(--radius-lg)",
-                                        padding:
-                                            "16px 20px",
-                                        display:
-                                            "grid",
-                                        gridTemplateColumns:
-                                            "1.3fr 1.2fr 110px 120px 150px 80px",
-                                        alignItems:
-                                            "center",
-                                        gap:
-                                            "18px",
-                                    }}
+                                    className="admin-section-heading"
                                 >
-
-                                    {/* ORDER */}
 
                                     <div>
 
-                                        <span
-                                            style={{
-                                                display:
-                                                    "block",
-                                                color:
-                                                    "var(--muted-text)",
-                                                fontSize:
-                                                    "9px",
-                                                letterSpacing:
-                                                    "0.8px",
-                                                marginBottom:
-                                                    "5px",
-                                            }}
-                                        >
-                                            ORDER
-                                        </span>
+                                        <p className="section-eyebrow">
+                                            CUSTOMER ORDERS
+                                        </p>
 
-                                        <strong
-                                            style={{
-                                                color:
-                                                    "var(--espresso-brown)",
-                                                fontSize:
-                                                    "12px",
-                                            }}
-                                        >
-                                            #
-                                            {order._id
-                                                .toString()
-                                                .slice(
-                                                    -8
-                                                )
-                                                .toUpperCase()}
-                                        </strong>
+                                        <h2>
+                                            Recent orders
+                                        </h2>
 
                                     </div>
 
+                                    <span>
+                                        {orders.length} orders
+                                    </span>
 
-                                    {/* CUSTOMER */}
+                                </div>
 
-                                    <div>
 
-                                        <span
+                                {ordersLoading ? (
+
+                                    <div
+                                        className="admin-product-form"
+                                        style={{
+                                            textAlign:
+                                                "center",
+                                            marginTop:
+                                                "20px",
+                                        }}
+                                    >
+                                        <p className="admin-loading">
+                                            Loading orders...
+                                        </p>
+                                    </div>
+
+                                ) : orders.length === 0 ? (
+
+                                    <div
+                                        className="admin-product-form"
+                                        style={{
+                                            textAlign:
+                                                "center",
+                                            marginTop:
+                                                "20px",
+                                        }}
+                                    >
+
+                                        <p className="section-eyebrow">
+                                            NO ORDERS
+                                        </p>
+
+                                        <h2
                                             style={{
-                                                display:
-                                                    "block",
-                                                color:
-                                                    "var(--muted-text)",
-                                                fontSize:
-                                                    "9px",
-                                                letterSpacing:
-                                                    "0.8px",
-                                                marginBottom:
-                                                    "5px",
-                                            }}
-                                        >
-                                            CUSTOMER
-                                        </span>
-
-                                        <strong
-                                            style={{
-                                                display:
-                                                    "block",
+                                                marginTop:
+                                                    "10px",
                                                 color:
                                                     "var(--espresso-brown)",
                                                 fontFamily:
                                                     "Georgia, serif",
                                                 fontWeight:
                                                     "400",
-                                                fontSize:
-                                                    "15px",
                                             }}
                                         >
-                                            {
-                                                customerName
-                                            }
-                                        </strong>
-
-                                        <span
-                                            style={{
-                                                color:
-                                                    "var(--muted-text)",
-                                                fontSize:
-                                                    "9px",
-                                            }}
-                                        >
-                                            {
-                                                order
-                                                    .user
-                                                    ?.email
-                                            }
-                                        </span>
+                                            Your store is
+                                            waiting for its
+                                            first order.
+                                        </h2>
 
                                     </div>
 
+                                ) : (
 
-                                    {/* DATE */}
-
-                                    <div>
-
-                                        <span
-                                            style={{
-                                                display:
-                                                    "block",
-                                                color:
-                                                    "var(--muted-text)",
-                                                fontSize:
-                                                    "9px",
-                                                marginBottom:
-                                                    "5px",
-                                            }}
-                                        >
-                                            DATE
-                                        </span>
-
-                                        <span
-                                            style={{
-                                                color:
-                                                    "var(--cocoa-taupe)",
-                                                fontSize:
-                                                    "11px",
-                                            }}
-                                        >
-                                            {date}
-                                        </span>
-
-                                    </div>
-
-
-                                    {/* TOTAL */}
-
-                                    <div>
-
-                                        <span
-                                            style={{
-                                                display:
-                                                    "block",
-                                                color:
-                                                    "var(--muted-text)",
-                                                fontSize:
-                                                    "9px",
-                                                marginBottom:
-                                                    "5px",
-                                            }}
-                                        >
-                                            TOTAL
-                                        </span>
-
-                                        <strong
-                                            style={{
-                                                color:
-                                                    "var(--espresso-brown)",
-                                                fontSize:
-                                                    "13px",
-                                            }}
-                                        >
-                                            ₹
-                                            {Number(
-                                                order.totalAmount
-                                            ).toLocaleString(
-                                                "en-IN"
-                                            )}
-                                        </strong>
-
-                                    </div>
-
-
-                                    {/* STATUS */}
-
-                                    <div>
-
-                                        <span
-                                            style={{
-                                                display:
-                                                    "block",
-                                                color:
-                                                    "var(--muted-text)",
-                                                fontSize:
-                                                    "9px",
-                                                marginBottom:
-                                                    "5px",
-                                            }}
-                                        >
-                                            STATUS
-                                        </span>
-
-                                        <select
-                                            value={
-                                                order.status
-                                            }
-                                            disabled={
-                                                updatingOrder
-                                            }
-                                            onChange={(
-                                                event
-                                            ) =>
-                                                updateOrderStatus(
-                                                    order._id,
-                                                    event
-                                                        .target
-                                                        .value
-                                                )
-                                            }
-                                            style={{
-                                                padding:
-                                                    "7px 9px",
-                                                border:
-                                                    "1px solid var(--light-border)",
-                                                borderRadius:
-                                                    "var(--radius-pill)",
-                                                background:
-                                                    "var(--blush-oat)",
-                                                color:
-                                                    "var(--cocoa-taupe)",
-                                                outline:
-                                                    "none",
-                                                fontFamily:
-                                                    "inherit",
-                                                fontSize:
-                                                    "10px",
-                                                cursor:
-                                                    "pointer",
-                                            }}
-                                        >
-
-                                            <option value="pending">
-                                                Pending
-                                            </option>
-
-                                            <option value="confirmed">
-                                                Confirmed
-                                            </option>
-
-                                            <option value="shipped">
-                                                Shipped
-                                            </option>
-
-                                            <option value="delivered">
-                                                Delivered
-                                            </option>
-
-                                            <option value="cancelled">
-                                                Cancelled
-                                            </option>
-
-                                        </select>
-
-                                    </div>
-
-
-                                    {/* VIEW */}
-
-                                    <button
-                                        type="button"
-                                        onClick={() =>
-                                            setSelectedOrder(
-                                                order
-                                            )
-                                        }
-                                        style={{
-                                            padding:
-                                                "9px 12px",
-                                            border:
-                                                "1px solid var(--light-border)",
-                                            borderRadius:
-                                                "var(--radius-pill)",
-                                            background:
-                                                "transparent",
-                                            color:
-                                                "var(--cocoa-taupe)",
-                                            fontFamily:
-                                                "inherit",
-                                            fontSize:
-                                                "10px",
-                                            fontWeight:
-                                                "600",
-                                            cursor:
-                                                "pointer",
-                                        }}
-                                    >
-                                        View
-                                    </button>
-
-                                </div>
-                            );
-                        }
-                    )}
-
-                </div>
-
-            )}
-
-        </section>
-
-
-        {/* =================================
-            ORDER DETAILS MODAL
-        ================================= */}
-
-        {selectedOrder && (
-            <div
-                onClick={() =>
-                    setSelectedOrder(
-                        null
-                    )
-                }
-                style={{
-                    position:
-                        "fixed",
-                    inset: 0,
-                    background:
-                        "rgba(50, 35, 30, 0.35)",
-                    display:
-                        "flex",
-                    alignItems:
-                        "center",
-                    justifyContent:
-                        "center",
-                    padding:
-                        "30px",
-                    zIndex: 100,
-                }}
-            >
-
-                <div
-                    onClick={(event) =>
-                        event.stopPropagation()
-                    }
-                    style={{
-                        width:
-                            "min(760px, 100%)",
-                        maxHeight:
-                            "90vh",
-                        overflowY:
-                            "auto",
-                        background:
-                            "var(--milk)",
-                        borderRadius:
-                            "var(--radius-xl)",
-                        padding:
-                            "32px",
-                        boxShadow:
-                            "0 25px 70px rgba(50,35,30,0.18)",
-                    }}
-                >
-
-                    {/* MODAL HEADER */}
-
-                    <div
-                        style={{
-                            display:
-                                "flex",
-                            justifyContent:
-                                "space-between",
-                            alignItems:
-                                "flex-start",
-                            gap: "20px",
-                            marginBottom:
-                                "28px",
-                        }}
-                    >
-
-                        <div>
-
-                            <p className="section-eyebrow">
-                                ORDER DETAILS
-                            </p>
-
-                            <h2
-                                style={{
-                                    marginTop:
-                                        "7px",
-                                    color:
-                                        "var(--espresso-brown)",
-                                    fontFamily:
-                                        "Georgia, serif",
-                                    fontSize:
-                                        "32px",
-                                    fontWeight:
-                                        "400",
-                                }}
-                            >
-                                #
-                                {selectedOrder._id
-                                    .toString()
-                                    .slice(
-                                        -8
-                                    )
-                                    .toUpperCase()}
-                            </h2>
-
-                        </div>
-
-
-                        <button
-                            type="button"
-                            onClick={() =>
-                                setSelectedOrder(
-                                    null
-                                )
-                            }
-                            style={{
-                                width:
-                                    "32px",
-                                height:
-                                    "32px",
-                                border:
-                                    "1px solid var(--light-border)",
-                                borderRadius:
-                                    "50%",
-                                background:
-                                    "transparent",
-                                color:
-                                    "var(--cocoa-taupe)",
-                                cursor:
-                                    "pointer",
-                                fontSize:
-                                    "16px",
-                            }}
-                        >
-                            ×
-                        </button>
-
-                    </div>
-
-
-                    {/* CUSTOMER */}
-
-                    <div
-                        className="admin-stat-card"
-                        style={{
-                            marginBottom:
-                                "12px",
-                        }}
-                    >
-
-                        <span>
-                            Customer
-                        </span>
-
-                        <strong
-                            style={{
-                                fontSize:
-                                    "22px",
-                            }}
-                        >
-                            {
-                                selectedOrder
-                                    .shippingAddress
-                                    ?.name
-                            }
-                        </strong>
-
-                        <p
-                            style={{
-                                marginTop:
-                                    "7px",
-                                color:
-                                    "var(--muted-text)",
-                                fontSize:
-                                    "11px",
-                            }}
-                        >
-                            {
-                                selectedOrder
-                                    .user
-                                    ?.email
-                            }
-                        </p>
-
-                    </div>
-
-
-                    {/* ORDER ITEMS */}
-
-                    <div
-                        style={{
-                            marginTop:
-                                "18px",
-                            padding:
-                                "22px",
-                            border:
-                                "1px solid var(--light-border)",
-                            borderRadius:
-                                "var(--radius-lg)",
-                        }}
-                    >
-
-                        <p className="section-eyebrow">
-                            ITEMS
-                        </p>
-
-                        <div
-                            style={{
-                                marginTop:
-                                    "15px",
-                                display:
-                                    "flex",
-                                flexDirection:
-                                    "column",
-                                gap:
-                                    "12px",
-                            }}
-                        >
-
-                            {selectedOrder.items.map(
-                                (
-                                    item,
-                                    index
-                                ) => (
                                     <div
-                                        key={
-                                            index
-                                        }
                                         style={{
                                             display:
                                                 "flex",
-                                            alignItems:
-                                                "center",
-                                            justifyContent:
-                                                "space-between",
-                                            gap:
-                                                "15px",
-                                            paddingBottom:
-                                                "12px",
-                                            borderBottom:
-                                                "1px solid var(--light-border)",
+                                            flexDirection:
+                                                "column",
+                                            gap: "10px",
                                         }}
                                     >
 
-                                        <div>
+                                        {orders.map(
+                                            (order) => {
 
-                                            <strong
+                                                const customerName =
+                                                    order
+                                                        .shippingAddress
+                                                        ?.name ||
+                                                    order.user
+                                                        ?.name ||
+                                                    "Customer";
+
+                                                const date =
+                                                    new Date(
+                                                        order.createdAt
+                                                    ).toLocaleDateString(
+                                                        "en-IN",
+                                                        {
+                                                            day: "2-digit",
+                                                            month:
+                                                                "short",
+                                                            year:
+                                                                "numeric",
+                                                        }
+                                                    );
+
+                                                return (
+                                                    <div
+                                                        key={
+                                                            order._id
+                                                        }
+                                                        style={{
+                                                            background:
+                                                                "var(--milk)",
+                                                            border:
+                                                                "1px solid var(--light-border)",
+                                                            borderRadius:
+                                                                "var(--radius-lg)",
+                                                            padding:
+                                                                "16px 20px",
+                                                            display:
+                                                                "grid",
+                                                            gridTemplateColumns:
+                                                                "1.3fr 1.2fr 110px 120px 150px 80px",
+                                                            alignItems:
+                                                                "center",
+                                                            gap:
+                                                                "18px",
+                                                        }}
+                                                    >
+
+                                                        {/* ORDER */}
+
+                                                        <div>
+
+                                                            <span
+                                                                style={{
+                                                                    display:
+                                                                        "block",
+                                                                    color:
+                                                                        "var(--muted-text)",
+                                                                    fontSize:
+                                                                        "9px",
+                                                                    letterSpacing:
+                                                                        "0.8px",
+                                                                    marginBottom:
+                                                                        "5px",
+                                                                }}
+                                                            >
+                                                                ORDER
+                                                            </span>
+
+                                                            <strong
+                                                                style={{
+                                                                    color:
+                                                                        "var(--espresso-brown)",
+                                                                    fontSize:
+                                                                        "12px",
+                                                                }}
+                                                            >
+                                                                #
+                                                                {order._id
+                                                                    .toString()
+                                                                    .slice(
+                                                                        -8
+                                                                    )
+                                                                    .toUpperCase()}
+                                                            </strong>
+
+                                                        </div>
+
+
+                                                        {/* CUSTOMER */}
+
+                                                        <div>
+
+                                                            <span
+                                                                style={{
+                                                                    display:
+                                                                        "block",
+                                                                    color:
+                                                                        "var(--muted-text)",
+                                                                    fontSize:
+                                                                        "9px",
+                                                                    letterSpacing:
+                                                                        "0.8px",
+                                                                    marginBottom:
+                                                                        "5px",
+                                                                }}
+                                                            >
+                                                                CUSTOMER
+                                                            </span>
+
+                                                            <strong
+                                                                style={{
+                                                                    display:
+                                                                        "block",
+                                                                    color:
+                                                                        "var(--espresso-brown)",
+                                                                    fontFamily:
+                                                                        "Georgia, serif",
+                                                                    fontWeight:
+                                                                        "400",
+                                                                    fontSize:
+                                                                        "15px",
+                                                                }}
+                                                            >
+                                                                {
+                                                                    customerName
+                                                                }
+                                                            </strong>
+
+                                                            <span
+                                                                style={{
+                                                                    color:
+                                                                        "var(--muted-text)",
+                                                                    fontSize:
+                                                                        "9px",
+                                                                }}
+                                                            >
+                                                                {
+                                                                    order
+                                                                        .user
+                                                                        ?.email
+                                                                }
+                                                            </span>
+
+                                                        </div>
+
+
+                                                        {/* DATE */}
+
+                                                        <div>
+
+                                                            <span
+                                                                style={{
+                                                                    display:
+                                                                        "block",
+                                                                    color:
+                                                                        "var(--muted-text)",
+                                                                    fontSize:
+                                                                        "9px",
+                                                                    marginBottom:
+                                                                        "5px",
+                                                                }}
+                                                            >
+                                                                DATE
+                                                            </span>
+
+                                                            <span
+                                                                style={{
+                                                                    color:
+                                                                        "var(--cocoa-taupe)",
+                                                                    fontSize:
+                                                                        "11px",
+                                                                }}
+                                                            >
+                                                                {date}
+                                                            </span>
+
+                                                        </div>
+
+
+                                                        {/* TOTAL */}
+
+                                                        <div>
+
+                                                            <span
+                                                                style={{
+                                                                    display:
+                                                                        "block",
+                                                                    color:
+                                                                        "var(--muted-text)",
+                                                                    fontSize:
+                                                                        "9px",
+                                                                    marginBottom:
+                                                                        "5px",
+                                                                }}
+                                                            >
+                                                                TOTAL
+                                                            </span>
+
+                                                            <strong
+                                                                style={{
+                                                                    color:
+                                                                        "var(--espresso-brown)",
+                                                                    fontSize:
+                                                                        "13px",
+                                                                }}
+                                                            >
+                                                                ₹
+                                                                {Number(
+                                                                    order.totalAmount
+                                                                ).toLocaleString(
+                                                                    "en-IN"
+                                                                )}
+                                                            </strong>
+
+                                                        </div>
+
+
+                                                        {/* STATUS */}
+
+                                                        <div>
+
+                                                            <span
+                                                                style={{
+                                                                    display:
+                                                                        "block",
+                                                                    color:
+                                                                        "var(--muted-text)",
+                                                                    fontSize:
+                                                                        "9px",
+                                                                    marginBottom:
+                                                                        "5px",
+                                                                }}
+                                                            >
+                                                                STATUS
+                                                            </span>
+
+                                                            <span
+                                                                style={{
+                                                                    display: "inline-block",
+                                                                    padding:
+                                                                        "7px 10px",
+                                                                    border:
+                                                                        "1px solid var(--light-border)",
+                                                                    borderRadius:
+                                                                        "var(--radius-pill)",
+                                                                    background:
+                                                                        "var(--blush-oat)",
+                                                                    color:
+                                                                        "var(--cocoa-taupe)",
+                                                                    fontSize: "10px",
+                                                                    textTransform:
+                                                                        "capitalize",
+                                                                }}
+                                                            >
+                                                                {order.status.replaceAll(
+                                                                    "_",
+                                                                    " "
+                                                                )}
+                                                            </span>
+
+                                                        </div>
+
+
+                                                        {/* VIEW */}
+
+                                                        <button
+                                                            type="button"
+                                                            onClick={() =>
+                                                                setSelectedOrder(
+                                                                    order
+                                                                )
+                                                            }
+                                                            style={{
+                                                                padding:
+                                                                    "9px 12px",
+                                                                border:
+                                                                    "1px solid var(--light-border)",
+                                                                borderRadius:
+                                                                    "var(--radius-pill)",
+                                                                background:
+                                                                    "transparent",
+                                                                color:
+                                                                    "var(--cocoa-taupe)",
+                                                                fontFamily:
+                                                                    "inherit",
+                                                                fontSize:
+                                                                    "10px",
+                                                                fontWeight:
+                                                                    "600",
+                                                                cursor:
+                                                                    "pointer",
+                                                            }}
+                                                        >
+                                                            View
+                                                        </button>
+
+                                                    </div>
+                                                );
+                                            }
+                                        )}
+
+                                    </div>
+
+                                )}
+
+                            </section>
+
+
+                            {/* =================================
+            ORDER DETAILS MODAL
+        ================================= */}
+
+                            {selectedOrder && (
+                                <div
+                                    onClick={() =>
+                                        setSelectedOrder(
+                                            null
+                                        )
+                                    }
+                                    style={{
+                                        position:
+                                            "fixed",
+                                        inset: 0,
+                                        background:
+                                            "rgba(50, 35, 30, 0.35)",
+                                        display:
+                                            "flex",
+                                        alignItems:
+                                            "center",
+                                        justifyContent:
+                                            "center",
+                                        padding:
+                                            "30px",
+                                        zIndex: 100,
+                                    }}
+                                >
+
+                                    <div
+                                        onClick={(event) =>
+                                            event.stopPropagation()
+                                        }
+                                        style={{
+                                            width:
+                                                "min(760px, 100%)",
+                                            maxHeight:
+                                                "90vh",
+                                            overflowY:
+                                                "auto",
+                                            background:
+                                                "var(--milk)",
+                                            borderRadius:
+                                                "var(--radius-xl)",
+                                            padding:
+                                                "32px",
+                                            boxShadow:
+                                                "0 25px 70px rgba(50,35,30,0.18)",
+                                        }}
+                                    >
+
+                                        {/* MODAL HEADER */}
+
+                                        <div
+                                            style={{
+                                                display:
+                                                    "flex",
+                                                justifyContent:
+                                                    "space-between",
+                                                alignItems:
+                                                    "flex-start",
+                                                gap: "20px",
+                                                marginBottom:
+                                                    "28px",
+                                            }}
+                                        >
+
+                                            <div>
+
+                                                <p className="section-eyebrow">
+                                                    ORDER DETAILS
+                                                </p>
+
+                                                <h2
+                                                    style={{
+                                                        marginTop:
+                                                            "7px",
+                                                        color:
+                                                            "var(--espresso-brown)",
+                                                        fontFamily:
+                                                            "Georgia, serif",
+                                                        fontSize:
+                                                            "32px",
+                                                        fontWeight:
+                                                            "400",
+                                                    }}
+                                                >
+                                                    #
+                                                    {selectedOrder._id
+                                                        .toString()
+                                                        .slice(
+                                                            -8
+                                                        )
+                                                        .toUpperCase()}
+                                                </h2>
+
+                                            </div>
+
+
+                                            <button
+                                                type="button"
+                                                onClick={() =>
+                                                    setSelectedOrder(
+                                                        null
+                                                    )
+                                                }
                                                 style={{
+                                                    width:
+                                                        "32px",
+                                                    height:
+                                                        "32px",
+                                                    border:
+                                                        "1px solid var(--light-border)",
+                                                    borderRadius:
+                                                        "50%",
+                                                    background:
+                                                        "transparent",
                                                     color:
-                                                        "var(--espresso-brown)",
-                                                    fontFamily:
-                                                        "Georgia, serif",
+                                                        "var(--cocoa-taupe)",
+                                                    cursor:
+                                                        "pointer",
                                                     fontSize:
-                                                        "14px",
-                                                    fontWeight:
-                                                        "400",
+                                                        "16px",
                                                 }}
                                             >
-                                                {
-                                                    item
-                                                        .product
-                                                        ?.name
-                                                }
-                                            </strong>
-
-                                            <span
-                                                style={{
-                                                    display:
-                                                        "block",
-                                                    marginTop:
-                                                        "4px",
-                                                    color:
-                                                        "var(--muted-text)",
-                                                    fontSize:
-                                                        "10px",
-                                                }}
-                                            >
-                                                Quantity:
-                                                {
-                                                    " "
-                                                }
-                                                {
-                                                    item.quantity
-                                                }
-                                            </span>
+                                                ×
+                                            </button>
 
                                         </div>
 
 
-                                        <strong
+                                        {/* CUSTOMER */}
+
+                                        <div
+                                            className="admin-stat-card"
                                             style={{
-                                                color:
-                                                    "var(--espresso-brown)",
-                                                fontSize:
+                                                marginBottom:
                                                     "12px",
                                             }}
                                         >
-                                            ₹
-                                            {(
-                                                item.price *
-                                                item.quantity
-                                            ).toLocaleString(
-                                                "en-IN"
-                                            )}
-                                        </strong>
 
-                                    </div>
-                                )
-                            )}
+                                            <span>
+                                                Customer
+                                            </span>
 
-                        </div>
+                                            <strong
+                                                style={{
+                                                    fontSize:
+                                                        "22px",
+                                                }}
+                                            >
+                                                {
+                                                    selectedOrder
+                                                        .shippingAddress
+                                                        ?.name
+                                                }
+                                            </strong>
 
+                                            <p
+                                                style={{
+                                                    marginTop:
+                                                        "7px",
+                                                    color:
+                                                        "var(--muted-text)",
+                                                    fontSize:
+                                                        "11px",
+                                                }}
+                                            >
+                                                {
+                                                    selectedOrder
+                                                        .user
+                                                        ?.email
+                                                }
+                                            </p>
 
-                        <div
-                            style={{
-                                display:
-                                    "flex",
-                                justifyContent:
-                                    "space-between",
-                                paddingTop:
-                                    "18px",
-                            }}
-                        >
-
-                            <span
-                                style={{
-                                    color:
-                                        "var(--muted-text)",
-                                    fontSize:
-                                        "12px",
-                                }}
-                            >
-                                Order Total
-                            </span>
-
-                            <strong
-                                style={{
-                                    color:
-                                        "var(--espresso-brown)",
-                                    fontFamily:
-                                        "Georgia, serif",
-                                    fontSize:
-                                        "20px",
-                                    fontWeight:
-                                        "400",
-                                }}
-                            >
-                                ₹
-                                {Number(
-                                    selectedOrder.totalAmount
-                                ).toLocaleString(
-                                    "en-IN"
-                                )}
-                            </strong>
-
-                        </div>
-
-                    </div>
+                                        </div>
 
 
-                    {/* PAYMENT + STATUS */}
+                                        {/* ORDER ITEMS */}
 
-                    <div
-                        style={{
-                            display:
-                                "grid",
-                            gridTemplateColumns:
-                                "1fr 1fr",
-                            gap:
-                                "12px",
-                            marginTop:
-                                "12px",
-                        }}
-                    >
+                                        <div
+                                            style={{
+                                                marginTop:
+                                                    "18px",
+                                                padding:
+                                                    "22px",
+                                                border:
+                                                    "1px solid var(--light-border)",
+                                                borderRadius:
+                                                    "var(--radius-lg)",
+                                            }}
+                                        >
 
-                        <div className="admin-stat-card">
+                                            <p className="section-eyebrow">
+                                                ITEMS
+                                            </p>
 
-                            <span>
-                                Payment
-                            </span>
+                                            <div
+                                                style={{
+                                                    marginTop:
+                                                        "15px",
+                                                    display:
+                                                        "flex",
+                                                    flexDirection:
+                                                        "column",
+                                                    gap:
+                                                        "12px",
+                                                }}
+                                            >
 
-                            <strong
-                                style={{
-                                    fontSize:
-                                        "20px",
-                                    textTransform:
-                                        "uppercase",
-                                }}
-                            >
-                                {
-                                    selectedOrder
-                                        .paymentMethod
-                                }
-                            </strong>
+                                                {selectedOrder.items.map(
+                                                    (
+                                                        item,
+                                                        index
+                                                    ) => (
+                                                        <div
+                                                            key={
+                                                                index
+                                                            }
+                                                            style={{
+                                                                display:
+                                                                    "flex",
+                                                                alignItems:
+                                                                    "center",
+                                                                justifyContent:
+                                                                    "space-between",
+                                                                gap:
+                                                                    "15px",
+                                                                paddingBottom:
+                                                                    "12px",
+                                                                borderBottom:
+                                                                    "1px solid var(--light-border)",
+                                                            }}
+                                                        >
 
-                            <p
-                                style={{
-                                    marginTop:
-                                        "5px",
-                                    color:
-                                        "var(--muted-text)",
-                                    fontSize:
-                                        "10px",
-                                    textTransform:
-                                        "capitalize",
-                                }}
-                            >
-                                {
-                                    selectedOrder
-                                        .paymentStatus
-                                }
-                            </p>
+                                                            <div>
 
-                        </div>
+                                                                <strong
+                                                                    style={{
+                                                                        color:
+                                                                            "var(--espresso-brown)",
+                                                                        fontFamily:
+                                                                            "Georgia, serif",
+                                                                        fontSize:
+                                                                            "14px",
+                                                                        fontWeight:
+                                                                            "400",
+                                                                    }}
+                                                                >
+                                                                    {
+                                                                        item
+                                                                            .product
+                                                                            ?.name
+                                                                    }
+                                                                </strong>
 
+                                                                <span
+                                                                    style={{
+                                                                        display:
+                                                                            "block",
+                                                                        marginTop:
+                                                                            "4px",
+                                                                        color:
+                                                                            "var(--muted-text)",
+                                                                        fontSize:
+                                                                            "10px",
+                                                                    }}
+                                                                >
+                                                                    Quantity:
+                                                                    {
+                                                                        " "
+                                                                    }
+                                                                    {
+                                                                        item.quantity
+                                                                    }
+                                                                </span>
 
-                        <div className="admin-stat-card">
-
-                            <span>
-                                Order Status
-                            </span>
-
-                            <select
-                                value={
-                                    selectedOrder.status
-                                }
-                                disabled={
-                                    updatingOrder
-                                }
-                                onChange={(
-                                    event
-                                ) =>
-                                    updateOrderStatus(
-                                        selectedOrder._id,
-                                        event
-                                            .target
-                                            .value
-                                    )
-                                }
-                                style={{
-                                    marginTop:
-                                        "5px",
-                                    padding:
-                                        "9px 10px",
-                                    border:
-                                        "1px solid var(--light-border)",
-                                    borderRadius:
-                                        "var(--radius-pill)",
-                                    background:
-                                        "var(--blush-oat)",
-                                    color:
-                                        "var(--cocoa-taupe)",
-                                    fontFamily:
-                                        "inherit",
-                                    fontSize:
-                                        "11px",
-                                    outline:
-                                        "none",
-                                }}
-                            >
-
-                                <option value="pending">
-                                    Pending
-                                </option>
-
-                                <option value="confirmed">
-                                    Confirmed
-                                </option>
-
-                                <option value="shipped">
-                                    Shipped
-                                </option>
-
-                                <option value="delivered">
-                                    Delivered
-                                </option>
-
-                                <option value="cancelled">
-                                    Cancelled
-                                </option>
-
-                            </select>
-
-                        </div>
-
-                    </div>
+                                                            </div>
 
 
-                    {/* ADDRESS */}
+                                                            <strong
+                                                                style={{
+                                                                    color:
+                                                                        "var(--espresso-brown)",
+                                                                    fontSize:
+                                                                        "12px",
+                                                                }}
+                                                            >
+                                                                ₹
+                                                                {(
+                                                                    item.price *
+                                                                    item.quantity
+                                                                ).toLocaleString(
+                                                                    "en-IN"
+                                                                )}
+                                                            </strong>
 
-                    <div
-                        style={{
-                            marginTop:
-                                "12px",
-                            padding:
-                                "22px",
-                            background:
-                                "var(--blush-oat)",
-                            borderRadius:
-                                "var(--radius-lg)",
-                        }}
-                    >
+                                                        </div>
+                                                    )
+                                                )}
 
-                        <p className="section-eyebrow">
-                            DELIVERY ADDRESS
-                        </p>
-
-                        <p
-                            style={{
-                                marginTop:
-                                    "12px",
-                                color:
-                                    "var(--espresso-brown)",
-                                fontSize:
-                                    "12px",
-                                lineHeight:
-                                    "1.8",
-                            }}
-                        >
-                            <strong>
-                                {
-                                    selectedOrder
-                                        .shippingAddress
-                                        ?.name
-                                }
-                            </strong>
-                            <br />
-
-                            {
-                                selectedOrder
-                                    .shippingAddress
-                                    ?.address
-                            }
-                            <br />
-
-                            {
-                                selectedOrder
-                                    .shippingAddress
-                                    ?.city
-                            }
-                            ,{" "}
-                            {
-                                selectedOrder
-                                    .shippingAddress
-                                    ?.state
-                            }{" "}
-                            -{" "}
-                            {
-                                selectedOrder
-                                    .shippingAddress
-                                    ?.pincode
-                            }
-                            <br />
-
-                            Phone:{" "}
-                            {
-                                selectedOrder
-                                    .shippingAddress
-                                    ?.phone
-                            }
-                        </p>
-
-                    </div>
+                                            </div>
 
 
-                    {/* CLOSE */}
+                                            <div
+                                                style={{
+                                                    display:
+                                                        "flex",
+                                                    justifyContent:
+                                                        "space-between",
+                                                    paddingTop:
+                                                        "18px",
+                                                }}
+                                            >
 
-                    <button
-                        type="button"
-                        className="admin-submit-button"
-                        onClick={() =>
-                            setSelectedOrder(
-                                null
-                            )
-                        }
-                        style={{
-                            marginTop:
-                                "22px",
-                        }}
-                    >
-                        Close
-                        <span>
-                            ×
-                        </span>
-                    </button>
+                                                <span
+                                                    style={{
+                                                        color:
+                                                            "var(--muted-text)",
+                                                        fontSize:
+                                                            "12px",
+                                                    }}
+                                                >
+                                                    Order Total
+                                                </span>
 
-                </div>
+                                                <strong
+                                                    style={{
+                                                        color:
+                                                            "var(--espresso-brown)",
+                                                        fontFamily:
+                                                            "Georgia, serif",
+                                                        fontSize:
+                                                            "20px",
+                                                        fontWeight:
+                                                            "400",
+                                                    }}
+                                                >
+                                                    ₹
+                                                    {Number(
+                                                        selectedOrder.totalAmount
+                                                    ).toLocaleString(
+                                                        "en-IN"
+                                                    )}
+                                                </strong>
 
+                                            </div>
+
+                                        </div>
+
+
+                                        {/* PAYMENT + STATUS */}
+{/* =========================================
+    PAYMENT
+========================================= */}
+
+<div
+    style={{
+        display: "grid",
+        gridTemplateColumns: "1fr 1fr",
+        gap: "12px",
+        marginTop: "12px",
+    }}
+>
+    {/* PAYMENT */}
+
+    <div className="admin-stat-card">
+        <span>Payment</span>
+
+        <strong
+            style={{
+                fontSize: "20px",
+                textTransform: "uppercase",
+            }}
+        >
+            {selectedOrder.paymentMethod}
+        </strong>
+
+        <p
+            style={{
+                marginTop: "5px",
+                color: "var(--muted-text)",
+                fontSize: "10px",
+                textTransform: "capitalize",
+            }}
+        >
+            Payment status:{" "}
+            {selectedOrder.paymentStatus}
+        </p>
+    </div>
+
+
+    {/* ORDER STATUS */}
+
+    <div className="admin-stat-card">
+        <span>Order Status</span>
+
+        <div
+            style={{
+                marginTop: "10px",
+                padding: "10px 12px",
+                borderRadius: "999px",
+                background: "var(--blush-oat)",
+                color: "var(--cocoa-taupe)",
+                fontSize: "11px",
+                textTransform: "capitalize",
+            }}
+        >
+            {selectedOrder.status.replaceAll("_", " ")}
+        </div>
+    </div>
+</div>
+
+
+{/* =========================================
+    ORDER ACTION
+========================================= */}
+
+<div
+    style={{
+        marginTop: "18px",
+        padding: "22px",
+        border: "1px solid var(--light-border)",
+        borderRadius: "var(--radius-lg)",
+        background: "var(--milk)",
+    }}
+>
+    <p className="section-eyebrow">
+        ORDER ACTION
+    </p>
+
+
+    {/* =====================================
+        PENDING
+    ===================================== */}
+
+    {selectedOrder.status === "pending" && (
+        <div style={{ marginTop: "14px" }}>
+            <p
+                style={{
+                    fontSize: "12px",
+                    color: "var(--muted-text)",
+                    marginBottom: "14px",
+                }}
+            >
+                This order is waiting for confirmation.
+            </p>
+
+            <button
+                type="button"
+                disabled={updatingOrder}
+                onClick={() =>
+                    updateOrderStatus(
+                        selectedOrder._id,
+                        "confirmed"
+                    )
+                }
+                className="admin-submit-button"
+            >
+                {updatingOrder
+                    ? "Confirming..."
+                    : "Confirm Order"}
+            </button>
+        </div>
+    )}
+
+
+    {/* =====================================
+        CONFIRMED
+    ===================================== */}
+
+    {selectedOrder.status === "confirmed" && (
+        <div style={{ marginTop: "14px" }}>
+            <p
+                style={{
+                    fontSize: "12px",
+                    color: "var(--muted-text)",
+                    marginBottom: "16px",
+                }}
+            >
+                The order is confirmed and ready to be
+                shipped.
+            </p>
+
+            <div
+                style={{
+                    padding: "18px",
+                    background: "var(--blush-oat)",
+                    borderRadius: "var(--radius-lg)",
+                }}
+            >
+                <p className="section-eyebrow">
+                    SHIPPING DETAILS
+                </p>
+
+
+                {/* COURIER */}
+
+                <input
+                    type="text"
+                    placeholder="Courier name"
+                    value={shippingData.courierName}
+                    onChange={(event) =>
+                        setShippingData((current) => ({
+                            ...current,
+                            courierName:
+                                event.target.value,
+                        }))
+                    }
+                    style={{
+                        width: "100%",
+                        marginTop: "12px",
+                        padding: "11px 13px",
+                        border:
+                            "1px solid var(--light-border)",
+                        borderRadius: "10px",
+                        background: "var(--milk)",
+                        color:
+                            "var(--espresso-brown)",
+                        fontFamily: "inherit",
+                        fontSize: "11px",
+                        outline: "none",
+                        boxSizing: "border-box",
+                    }}
+                />
+
+
+                {/* TRACKING NUMBER */}
+
+                <input
+                    type="text"
+                    placeholder="Tracking number"
+                    value={shippingData.trackingNumber}
+                    onChange={(event) =>
+                        setShippingData((current) => ({
+                            ...current,
+                            trackingNumber:
+                                event.target.value,
+                        }))
+                    }
+                    style={{
+                        width: "100%",
+                        marginTop: "10px",
+                        padding: "11px 13px",
+                        border:
+                            "1px solid var(--light-border)",
+                        borderRadius: "10px",
+                        background: "var(--milk)",
+                        color:
+                            "var(--espresso-brown)",
+                        fontFamily: "inherit",
+                        fontSize: "11px",
+                        outline: "none",
+                        boxSizing: "border-box",
+                    }}
+                />
+
+
+                {/* TRACKING URL */}
+
+                <input
+                    type="text"
+                    placeholder="Tracking URL (optional)"
+                    value={shippingData.trackingUrl}
+                    onChange={(event) =>
+                        setShippingData((current) => ({
+                            ...current,
+                            trackingUrl:
+                                event.target.value,
+                        }))
+                    }
+                    style={{
+                        width: "100%",
+                        marginTop: "10px",
+                        padding: "11px 13px",
+                        border:
+                            "1px solid var(--light-border)",
+                        borderRadius: "10px",
+                        background: "var(--milk)",
+                        color:
+                            "var(--espresso-brown)",
+                        fontFamily: "inherit",
+                        fontSize: "11px",
+                        outline: "none",
+                        boxSizing: "border-box",
+                    }}
+                />
+
+
+                {/* SHIP */}
+
+                <button
+                    type="button"
+                    disabled={
+                        updatingOrder ||
+                        !shippingData.courierName.trim() ||
+                        !shippingData.trackingNumber.trim()
+                    }
+                    onClick={() =>
+                        updateOrderStatus(
+                            selectedOrder._id,
+                            "shipped"
+                        )
+                    }
+                    className="admin-submit-button"
+                    style={{
+                        marginTop: "14px",
+                        opacity:
+                            !shippingData.courierName.trim() ||
+                            !shippingData.trackingNumber.trim()
+                                ? 0.5
+                                : 1,
+                    }}
+                >
+                    {updatingOrder
+                        ? "Shipping..."
+                        : "Mark as Shipped"}
+                </button>
+            </div>
+        </div>
+    )}
+
+
+    {/* =====================================
+        SHIPPED
+    ===================================== */}
+
+    {selectedOrder.status === "shipped" && (
+        <div style={{ marginTop: "14px" }}>
+            <p
+                style={{
+                    fontSize: "12px",
+                    color: "var(--muted-text)",
+                    marginBottom: "14px",
+                }}
+            >
+                This order has been shipped.
+            </p>
+
+            {selectedOrder.courierName && (
+                <p
+                    style={{
+                        fontSize: "11px",
+                        marginBottom: "6px",
+                    }}
+                >
+                    <strong>Courier:</strong>{" "}
+                    {selectedOrder.courierName}
+                </p>
+            )}
+
+            {selectedOrder.trackingNumber && (
+                <p
+                    style={{
+                        fontSize: "11px",
+                        marginBottom: "6px",
+                    }}
+                >
+                    <strong>Tracking:</strong>{" "}
+                    {selectedOrder.trackingNumber}
+                </p>
+            )}
+
+            {selectedOrder.trackingUrl && (
+                <a
+                    href={selectedOrder.trackingUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{
+                        display: "inline-block",
+                        marginTop: "5px",
+                        fontSize: "11px",
+                        color: "var(--dusty-rose)",
+                    }}
+                >
+                    Open Tracking →
+                </a>
+            )}
+
+            <button
+                type="button"
+                disabled={updatingOrder}
+                onClick={() =>
+                    updateOrderStatus(
+                        selectedOrder._id,
+                        "delivered"
+                    )
+                }
+                className="admin-submit-button"
+                style={{
+                    marginTop: "18px",
+                }}
+            >
+                {updatingOrder
+                    ? "Updating..."
+                    : "Mark as Delivered"}
+            </button>
+        </div>
+    )}
+
+
+    {/* =====================================
+        DELIVERED
+    ===================================== */}
+
+    {selectedOrder.status === "delivered" && (
+        <div
+            style={{
+                marginTop: "14px",
+                padding: "16px",
+                borderRadius: "var(--radius-lg)",
+                background: "var(--blush-oat)",
+            }}
+        >
+            <strong
+                style={{
+                    color: "var(--espresso-brown)",
+                    fontSize: "13px",
+                }}
+            >
+                ✓ Order Delivered
+            </strong>
+
+            <p
+                style={{
+                    marginTop: "6px",
+                    fontSize: "11px",
+                    color: "var(--muted-text)",
+                }}
+            >
+                This order is complete and can no longer
+                be changed.
+            </p>
+        </div>
+    )}
+
+
+    {/* =====================================
+        CANCELLED
+    ===================================== */}
+
+    {selectedOrder.status === "cancelled" && (
+        <div
+            style={{
+                marginTop: "14px",
+                padding: "16px",
+                borderRadius: "var(--radius-lg)",
+                background: "#fff4e5",
+            }}
+        >
+            <strong
+                style={{
+                    color: "#9b5555",
+                    fontSize: "13px",
+                }}
+            >
+                Order Cancelled
+            </strong>
+
+            <p
+                style={{
+                    marginTop: "6px",
+                    fontSize: "11px",
+                    color: "var(--muted-text)",
+                }}
+            >
+                This order can no longer be changed.
+            </p>
+        </div>
+    )}
+
+
+    {/* =====================================
+        CANCELLATION REQUEST
+    ===================================== */}
+
+    {selectedOrder.status ===
+        "cancellation_requested" && (
+        <div
+            style={{
+                marginTop: "14px",
+                padding: "20px",
+                borderRadius: "var(--radius-lg)",
+                background: "#fff4e5",
+                border: "1px solid #ead8bd",
+            }}
+        >
+            <p className="section-eyebrow">
+                CANCELLATION REQUEST
+            </p>
+
+            <h3
+                style={{
+                    marginTop: "8px",
+                    fontFamily: "Georgia, serif",
+                    fontWeight: "400",
+                    color: "var(--espresso-brown)",
+                }}
+            >
+                Customer requested cancellation
+            </h3>
+
+            {selectedOrder.cancellationReason && (
+                <p
+                    style={{
+                        marginTop: "8px",
+                        fontSize: "11px",
+                        color: "var(--muted-text)",
+                    }}
+                >
+                    Reason:{" "}
+                    {selectedOrder.cancellationReason}
+                </p>
+            )}
+
+            <div
+                style={{
+                    display: "flex",
+                    gap: "10px",
+                    marginTop: "16px",
+                    flexWrap: "wrap",
+                }}
+            >
+                <button
+                    type="button"
+                    disabled={updatingOrder}
+                    onClick={() =>
+                        updateOrderStatus(
+                            selectedOrder._id,
+                            "cancelled"
+                        )
+                    }
+                    style={{
+                        padding: "10px 16px",
+                        border: "none",
+                        borderRadius: "999px",
+                        background: "#9b5555",
+                        color: "white",
+                        cursor: "pointer",
+                        fontFamily: "inherit",
+                        fontSize: "11px",
+                        fontWeight: "600",
+                    }}
+                >
+                    {updatingOrder
+                        ? "Cancelling..."
+                        : "Approve Cancellation"}
+                </button>
+
+                <button
+                    type="button"
+                    disabled={updatingOrder}
+                    onClick={() =>
+                        rejectCancellation(
+                            selectedOrder._id
+                        )
+                    }
+                    style={{
+                        padding: "10px 16px",
+                        border:
+                            "1px solid var(--light-border)",
+                        borderRadius: "999px",
+                        background: "transparent",
+                        color: "var(--cocoa-taupe)",
+                        cursor: "pointer",
+                        fontFamily: "inherit",
+                        fontSize: "11px",
+                        fontWeight: "600",
+                    }}
+                >
+                    {updatingOrder
+                        ? "Please wait..."
+                        : "Reject Cancellation"}
+                </button>
+            </div>
+        </div>
+    )}
+
+
+    {/* =====================================
+        REFUND
+    ===================================== */}
+
+    {selectedOrder.status === "cancelled" &&
+        selectedOrder.paymentStatus === "paid" &&
+        selectedOrder.refundStatus !== "processed" && (
+            <div
+                style={{
+                    marginTop: "18px",
+                    padding: "18px",
+                    borderRadius: "var(--radius-lg)",
+                    background: "var(--blush-oat)",
+                }}
+            >
+                <p className="section-eyebrow">
+                    REFUND
+                </p>
+
+                <p
+                    style={{
+                        marginTop: "8px",
+                        fontSize: "12px",
+                        color: "var(--espresso-brown)",
+                    }}
+                >
+                    This customer paid ₹
+                    {Number(
+                        selectedOrder.totalAmount
+                    ).toLocaleString("en-IN")}
+                    .
+                </p>
+
+                <p
+                    style={{
+                        marginTop: "5px",
+                        fontSize: "10px",
+                        color: "var(--muted-text)",
+                    }}
+                >
+                    This is a demo refund. No real money
+                    will be transferred.
+                </p>
+
+                <button
+                    type="button"
+                    disabled={updatingOrder}
+                    onClick={() =>
+                        processRefund(
+                            selectedOrder._id
+                        )
+                    }
+                    className="admin-submit-button"
+                    style={{
+                        marginTop: "14px",
+                    }}
+                >
+                    {updatingOrder
+                        ? "Processing Refund..."
+                        : `Process Refund ₹${Number(
+                              selectedOrder.totalAmount
+                          ).toLocaleString("en-IN")}`}
+                </button>
             </div>
         )}
 
-    </div>
-)}
+
+    {/* =====================================
+        REFUND PROCESSED
+    ===================================== */}
+
+    {selectedOrder.refundStatus === "processed" && (
+        <div
+            style={{
+                marginTop: "18px",
+                padding: "18px",
+                borderRadius: "var(--radius-lg)",
+                background: "var(--blush-oat)",
+            }}
+        >
+            <p className="section-eyebrow">
+                REFUND PROCESSED
+            </p>
+
+            <p
+                style={{
+                    marginTop: "8px",
+                    fontSize: "12px",
+                    color: "var(--espresso-brown)",
+                }}
+            >
+                ₹
+                {Number(
+                    selectedOrder.refundAmount
+                ).toLocaleString("en-IN")}{" "}
+                refunded successfully.
+            </p>
+
+            {selectedOrder.refundId && (
+                <p
+                    style={{
+                        marginTop: "5px",
+                        fontSize: "10px",
+                        color: "var(--muted-text)",
+                    }}
+                >
+                    Refund ID:{" "}
+                    {selectedOrder.refundId}
+                </p>
+            )}
+        </div>
+    )}
+
+</div>
+                                        {/* CLOSE */}
+
+                                        <button
+                                            type="button"
+                                            className="admin-submit-button"
+                                            onClick={() =>
+                                                setSelectedOrder(
+                                                    null
+                                                )
+                                            }
+                                            style={{
+                                                marginTop:
+                                                    "22px",
+                                            }}
+                                        >
+                                            Close
+                                            <span>
+                                                ×
+                                            </span>
+                                        </button>
+
+                                    </div>
+
+                                </div>
+                            )}
+
+                        </div>
+                    )}
 
 
                 {/* =================================
@@ -3497,86 +4138,86 @@ const totalRevenue =
 
                 {activeSection ===
                     "users" && (
-                    <div
-                        style={{
-                            padding:
-                                "50px 5% 90px",
-                        }}
-                    >
-
-                        <div className="admin-header">
-
-                            <div>
-
-                                <p className="section-eyebrow">
-                                    GLOWCARE
-                                    ADMIN
-                                </p>
-
-                                <h1>
-                                    Customer
-                                    <span>
-                                        accounts.
-                                    </span>
-                                </h1>
-
-                            </div>
-
-                        </div>
-
-
-                        <section
-                            className="admin-product-form"
+                        <div
                             style={{
-                                marginTop:
-                                    "45px",
-                                textAlign:
-                                    "center",
+                                padding:
+                                    "50px 5% 90px",
                             }}
                         >
 
-                            <p className="section-eyebrow">
-                                COMING NEXT
-                            </p>
+                            <div className="admin-header">
 
-                            <h2
+                                <div>
+
+                                    <p className="section-eyebrow">
+                                        GLOWCARE
+                                        ADMIN
+                                    </p>
+
+                                    <h1>
+                                        Customer
+                                        <span>
+                                            accounts.
+                                        </span>
+                                    </h1>
+
+                                </div>
+
+                            </div>
+
+
+                            <section
+                                className="admin-product-form"
                                 style={{
                                     marginTop:
-                                        "8px",
-                                    color:
-                                        "var(--espresso-brown)",
-                                    fontFamily:
-                                        "Georgia, serif",
-                                    fontSize:
-                                        "32px",
-                                    fontWeight:
-                                        "400",
+                                        "45px",
+                                    textAlign:
+                                        "center",
                                 }}
                             >
-                                Customer
-                                management
-                            </h2>
 
-                            <p
-                                style={{
-                                    marginTop:
-                                        "12px",
-                                    color:
-                                        "var(--muted-text)",
-                                    fontSize:
-                                        "13px",
-                                }}
-                            >
-                                We'll connect your
-                                registered users
-                                here after order
-                                management.
-                            </p>
+                                <p className="section-eyebrow">
+                                    COMING NEXT
+                                </p>
 
-                        </section>
+                                <h2
+                                    style={{
+                                        marginTop:
+                                            "8px",
+                                        color:
+                                            "var(--espresso-brown)",
+                                        fontFamily:
+                                            "Georgia, serif",
+                                        fontSize:
+                                            "32px",
+                                        fontWeight:
+                                            "400",
+                                    }}
+                                >
+                                    Customer
+                                    management
+                                </h2>
 
-                    </div>
-                )}
+                                <p
+                                    style={{
+                                        marginTop:
+                                            "12px",
+                                        color:
+                                            "var(--muted-text)",
+                                        fontSize:
+                                            "13px",
+                                    }}
+                                >
+                                    We'll connect your
+                                    registered users
+                                    here after order
+                                    management.
+                                </p>
+
+                            </section>
+
+                        </div>
+                    )}
 
 
                 {/* =================================
@@ -3585,565 +4226,565 @@ const totalRevenue =
 
                 {activeSection ===
                     "products" && (
-                    <div
-                        style={{
-                            padding:
-                                "50px 5% 90px",
-                        }}
-                    >
-
-                        {/* HEADER */}
-
-                        <section className="admin-header">
-
-                            <div>
-
-                                <p className="section-eyebrow">
-                                    GLOWCARE
-                                    ADMIN
-                                </p>
-
-                                <h1>
-                                    Product
-                                    <span>
-                                        studio.
-                                    </span>
-                                </h1>
-
-                            </div>
-
-
-                            <button
-                                className="admin-add-button"
-                                onClick={
-                                    showForm
-                                        ? resetForm
-                                        : openAddForm
-                                }
-                            >
-                                {showForm
-                                    ? "Close Form"
-                                    : "+ Add Product"}
-                            </button>
-
-                        </section>
-
-
-                        {/* PRODUCT FORM */}
-
-                        {showForm && (
-                            <section className="admin-product-form">
-
-                                <div className="admin-form-heading">
-
-                                    <div>
-
-                                        <p className="section-eyebrow">
-                                            {editingProduct
-                                                ? "EDIT PRODUCT"
-                                                : "NEW PRODUCT"}
-                                        </p>
-
-                                        <h2>
-                                            {editingProduct
-                                                ? "Update your product"
-                                                : "Add to your collection"}
-                                        </h2>
-
-                                    </div>
-
-                                </div>
-
-
-                                <form
-                                    onSubmit={
-                                        handleSubmit
-                                    }
-                                >
-
-                                    <div className="admin-form-grid">
-
-                                        <div className="admin-field">
-
-                                            <label>
-                                                Product Name
-                                            </label>
-
-                                            <input
-                                                type="text"
-                                                name="name"
-                                                value={
-                                                    formData.name
-                                                }
-                                                onChange={
-                                                    handleChange
-                                                }
-                                                placeholder="e.g. Rose Glow Serum"
-                                                required
-                                            />
-
-                                        </div>
-
-
-                                        <div className="admin-field">
-
-                                            <label>
-                                                Short Name
-                                            </label>
-
-                                            <input
-                                                type="text"
-                                                name="shortName"
-                                                value={
-                                                    formData.shortName
-                                                }
-                                                onChange={
-                                                    handleChange
-                                                }
-                                                placeholder="e.g. SERUM"
-                                                required
-                                            />
-
-                                        </div>
-
-
-                                        <div className="admin-field">
-
-                                            <label>
-                                                Category
-                                            </label>
-
-                                            <select
-                                                name="category"
-                                                value={
-                                                    formData.category
-                                                }
-                                                onChange={
-                                                    handleChange
-                                                }
-                                            >
-
-                                                <option value="Face Wash">
-                                                    Face Wash
-                                                </option>
-
-                                                <option value="Serums">
-                                                    Serums
-                                                </option>
-
-                                                <option value="Moisturizers">
-                                                    Moisturizers
-                                                </option>
-
-                                                <option value="Sunscreen">
-                                                    Sunscreen
-                                                </option>
-
-                                            </select>
-
-                                        </div>
-
-
-                                        <div className="admin-field">
-
-                                            <label>
-                                                Price
-                                            </label>
-
-                                            <input
-                                                type="number"
-                                                name="price"
-                                                value={
-                                                    formData.price
-                                                }
-                                                onChange={
-                                                    handleChange
-                                                }
-                                                placeholder="699"
-                                                min="0"
-                                                required
-                                            />
-
-                                        </div>
-
-
-                                        <div className="admin-field">
-
-                                            <label>
-                                                Rating
-                                            </label>
-
-                                            <input
-                                                type="number"
-                                                name="rating"
-                                                value={
-                                                    formData.rating
-                                                }
-                                                onChange={
-                                                    handleChange
-                                                }
-                                                placeholder="4.8"
-                                                min="0"
-                                                max="5"
-                                                step="0.1"
-                                                required
-                                            />
-
-                                        </div>
-
-
-                                        <div className="admin-field">
-
-                                            <label>
-                                                Stock
-                                            </label>
-
-                                            <input
-                                                type="number"
-                                                name="stock"
-                                                value={
-                                                    formData.stock
-                                                }
-                                                onChange={
-                                                    handleChange
-                                                }
-                                                placeholder="25"
-                                                min="0"
-                                                required
-                                            />
-
-                                        </div>
-
-
-                                        <div className="admin-field admin-field-full">
-
-                                            <label>
-                                                Product Image
-                                            </label>
-
-                                            <input
-                                                type="file"
-                                                accept="image/*"
-                                                onChange={
-                                                    handleImageChange
-                                                }
-                                                required={
-                                                    !editingProduct
-                                                }
-                                            />
-
-                                            {imagePreview && (
-                                                <div className="admin-image-preview">
-
-                                                    <img
-                                                        src={
-                                                            imagePreview
-                                                        }
-                                                        alt="Product preview"
-                                                    />
-
-                                                </div>
-                                            )}
-
-                                            {uploadingImage && (
-                                                <p className="image-upload-status">
-                                                    Uploading
-                                                    image...
-                                                </p>
-                                            )}
-
-                                            {!uploadingImage &&
-                                                formData.image && (
-                                                    <p className="image-upload-status success">
-                                                        Image
-                                                        ready ✓
-                                                    </p>
-                                                )}
-
-                                            {editingProduct && (
-                                                <p className="admin-image-help">
-                                                    Leave the
-                                                    image
-                                                    empty to
-                                                    keep the
-                                                    current
-                                                    image.
-                                                </p>
-                                            )}
-
-                                        </div>
-
-
-                                        <div className="admin-field admin-field-full">
-
-                                            <label>
-                                                Description
-                                            </label>
-
-                                            <textarea
-                                                name="description"
-                                                value={
-                                                    formData.description
-                                                }
-                                                onChange={
-                                                    handleChange
-                                                }
-                                                placeholder="Describe this skincare product..."
-                                                rows="4"
-                                                required
-                                            />
-
-                                        </div>
-
-                                    </div>
-
-
-                                    <div className="admin-form-actions">
-
-                                        <button
-                                            type="button"
-                                            className="admin-cancel-button"
-                                            onClick={
-                                                resetForm
-                                            }
-                                        >
-                                            Cancel
-                                        </button>
-
-
-                                        <button
-                                            type="submit"
-                                            className="admin-submit-button"
-                                            disabled={
-                                                uploadingImage
-                                            }
-                                        >
-                                            {uploadingImage
-                                                ? "Uploading image..."
-                                                : editingProduct
-                                                    ? "Save Changes"
-                                                    : "Create Product"}
-
-                                            <span>
-                                                →
-                                            </span>
-
-                                        </button>
-
-                                    </div>
-
-                                </form>
-
-                            </section>
-                        )}
-
-
-                        {/* STATS */}
-
-                        <section className="admin-stats">
-
-                            <div className="admin-stat-card">
-
-                                <span>
-                                    Total Products
-                                </span>
-
-                                <strong>
-                                    {
-                                        products.length
-                                    }
-                                </strong>
-
-                            </div>
-
-
-                            <div className="admin-stat-card">
-
-                                <span>
-                                    Categories
-                                </span>
-
-                                <strong>
-                                    {
-                                        categories
-                                    }
-                                </strong>
-
-                            </div>
-
-
-                            <div className="admin-stat-card">
-
-                                <span>
-                                    Low Stock
-                                </span>
-
-                                <strong>
-                                    {
-                                        lowStock
-                                    }
-                                </strong>
-
-                            </div>
-
-                        </section>
-
-
-                        {/* PRODUCT LIST */}
-
-                        <section className="admin-products">
-
-                            <div className="admin-section-heading">
+                        <div
+                            style={{
+                                padding:
+                                    "50px 5% 90px",
+                            }}
+                        >
+
+                            {/* HEADER */}
+
+                            <section className="admin-header">
 
                                 <div>
 
                                     <p className="section-eyebrow">
-                                        PRODUCT
-                                        CATALOG
+                                        GLOWCARE
+                                        ADMIN
                                     </p>
 
-                                    <h2>
-                                        All products
-                                    </h2>
+                                    <h1>
+                                        Product
+                                        <span>
+                                            studio.
+                                        </span>
+                                    </h1>
 
                                 </div>
 
-                                <span>
-                                    {
-                                        products.length
-                                    }{" "}
-                                    items
-                                </span>
 
-                            </div>
+                                <button
+                                    className="admin-add-button"
+                                    onClick={
+                                        showForm
+                                            ? resetForm
+                                            : openAddForm
+                                    }
+                                >
+                                    {showForm
+                                        ? "Close Form"
+                                        : "+ Add Product"}
+                                </button>
 
-
-                            <div className="admin-product-list">
-
-                                {products.map(
-                                    (
-                                        product
-                                    ) => (
-                                        <article
-                                            className="admin-product-row"
-                                            key={
-                                                product._id
-                                            }
-                                        >
-
-                                            <div className="admin-product-info">
-
-                                                <div className="admin-product-image">
-
-                                                    <img
-                                                        src={
-                                                            product.image
-                                                        }
-                                                        alt={
-                                                            product.name
-                                                        }
-                                                    />
-
-                                                </div>
+                            </section>
 
 
-                                                <div>
+                            {/* PRODUCT FORM */}
 
-                                                    <p>
-                                                        {
-                                                            product.category
-                                                        }
+                            {showForm && (
+                                <section className="admin-product-form">
+
+                                    <div className="admin-form-heading">
+
+                                        <div>
+
+                                            <p className="section-eyebrow">
+                                                {editingProduct
+                                                    ? "EDIT PRODUCT"
+                                                    : "NEW PRODUCT"}
+                                            </p>
+
+                                            <h2>
+                                                {editingProduct
+                                                    ? "Update your product"
+                                                    : "Add to your collection"}
+                                            </h2>
+
+                                        </div>
+
+                                    </div>
+
+
+                                    <form
+                                        onSubmit={
+                                            handleSubmit
+                                        }
+                                    >
+
+                                        <div className="admin-form-grid">
+
+                                            <div className="admin-field">
+
+                                                <label>
+                                                    Product Name
+                                                </label>
+
+                                                <input
+                                                    type="text"
+                                                    name="name"
+                                                    value={
+                                                        formData.name
+                                                    }
+                                                    onChange={
+                                                        handleChange
+                                                    }
+                                                    placeholder="e.g. Rose Glow Serum"
+                                                    required
+                                                />
+
+                                            </div>
+
+
+                                            <div className="admin-field">
+
+                                                <label>
+                                                    Short Name
+                                                </label>
+
+                                                <input
+                                                    type="text"
+                                                    name="shortName"
+                                                    value={
+                                                        formData.shortName
+                                                    }
+                                                    onChange={
+                                                        handleChange
+                                                    }
+                                                    placeholder="e.g. SERUM"
+                                                    required
+                                                />
+
+                                            </div>
+
+
+                                            <div className="admin-field">
+
+                                                <label>
+                                                    Category
+                                                </label>
+
+                                                <select
+                                                    name="category"
+                                                    value={
+                                                        formData.category
+                                                    }
+                                                    onChange={
+                                                        handleChange
+                                                    }
+                                                >
+
+                                                    <option value="Face Wash">
+                                                        Face Wash
+                                                    </option>
+
+                                                    <option value="Serums">
+                                                        Serums
+                                                    </option>
+
+                                                    <option value="Moisturizers">
+                                                        Moisturizers
+                                                    </option>
+
+                                                    <option value="Sunscreen">
+                                                        Sunscreen
+                                                    </option>
+
+                                                </select>
+
+                                            </div>
+
+
+                                            <div className="admin-field">
+
+                                                <label>
+                                                    Price
+                                                </label>
+
+                                                <input
+                                                    type="number"
+                                                    name="price"
+                                                    value={
+                                                        formData.price
+                                                    }
+                                                    onChange={
+                                                        handleChange
+                                                    }
+                                                    placeholder="699"
+                                                    min="0"
+                                                    required
+                                                />
+
+                                            </div>
+
+
+                                            <div className="admin-field">
+
+                                                <label>
+                                                    Rating
+                                                </label>
+
+                                                <input
+                                                    type="number"
+                                                    name="rating"
+                                                    value={
+                                                        formData.rating
+                                                    }
+                                                    onChange={
+                                                        handleChange
+                                                    }
+                                                    placeholder="4.8"
+                                                    min="0"
+                                                    max="5"
+                                                    step="0.1"
+                                                    required
+                                                />
+
+                                            </div>
+
+
+                                            <div className="admin-field">
+
+                                                <label>
+                                                    Stock
+                                                </label>
+
+                                                <input
+                                                    type="number"
+                                                    name="stock"
+                                                    value={
+                                                        formData.stock
+                                                    }
+                                                    onChange={
+                                                        handleChange
+                                                    }
+                                                    placeholder="25"
+                                                    min="0"
+                                                    required
+                                                />
+
+                                            </div>
+
+
+                                            <div className="admin-field admin-field-full">
+
+                                                <label>
+                                                    Product Image
+                                                </label>
+
+                                                <input
+                                                    type="file"
+                                                    accept="image/*"
+                                                    onChange={
+                                                        handleImageChange
+                                                    }
+                                                    required={
+                                                        !editingProduct
+                                                    }
+                                                />
+
+                                                {imagePreview && (
+                                                    <div className="admin-image-preview">
+
+                                                        <img
+                                                            src={
+                                                                imagePreview
+                                                            }
+                                                            alt="Product preview"
+                                                        />
+
+                                                    </div>
+                                                )}
+
+                                                {uploadingImage && (
+                                                    <p className="image-upload-status">
+                                                        Uploading
+                                                        image...
                                                     </p>
+                                                )}
 
-                                                    <h3>
-                                                        {
-                                                            product.name
-                                                        }
-                                                    </h3>
+                                                {!uploadingImage &&
+                                                    formData.image && (
+                                                        <p className="image-upload-status success">
+                                                            Image
+                                                            ready ✓
+                                                        </p>
+                                                    )}
 
-                                                </div>
+                                                {editingProduct && (
+                                                    <p className="admin-image-help">
+                                                        Leave the
+                                                        image
+                                                        empty to
+                                                        keep the
+                                                        current
+                                                        image.
+                                                    </p>
+                                                )}
 
                                             </div>
 
 
-                                            <div className="admin-product-price">
-                                                ₹
-                                                {
-                                                    product.price
+                                            <div className="admin-field admin-field-full">
+
+                                                <label>
+                                                    Description
+                                                </label>
+
+                                                <textarea
+                                                    name="description"
+                                                    value={
+                                                        formData.description
+                                                    }
+                                                    onChange={
+                                                        handleChange
+                                                    }
+                                                    placeholder="Describe this skincare product..."
+                                                    rows="4"
+                                                    required
+                                                />
+
+                                            </div>
+
+                                        </div>
+
+
+                                        <div className="admin-form-actions">
+
+                                            <button
+                                                type="button"
+                                                className="admin-cancel-button"
+                                                onClick={
+                                                    resetForm
                                                 }
-                                            </div>
+                                            >
+                                                Cancel
+                                            </button>
 
 
-                                            <div className="admin-product-stock">
+                                            <button
+                                                type="submit"
+                                                className="admin-submit-button"
+                                                disabled={
+                                                    uploadingImage
+                                                }
+                                            >
+                                                {uploadingImage
+                                                    ? "Uploading image..."
+                                                    : editingProduct
+                                                        ? "Save Changes"
+                                                        : "Create Product"}
 
                                                 <span>
-                                                    Stock
+                                                    →
                                                 </span>
 
-                                                <strong>
+                                            </button>
+
+                                        </div>
+
+                                    </form>
+
+                                </section>
+                            )}
+
+
+                            {/* STATS */}
+
+                            <section className="admin-stats">
+
+                                <div className="admin-stat-card">
+
+                                    <span>
+                                        Total Products
+                                    </span>
+
+                                    <strong>
+                                        {
+                                            products.length
+                                        }
+                                    </strong>
+
+                                </div>
+
+
+                                <div className="admin-stat-card">
+
+                                    <span>
+                                        Categories
+                                    </span>
+
+                                    <strong>
+                                        {
+                                            categories
+                                        }
+                                    </strong>
+
+                                </div>
+
+
+                                <div className="admin-stat-card">
+
+                                    <span>
+                                        Low Stock
+                                    </span>
+
+                                    <strong>
+                                        {
+                                            lowStock
+                                        }
+                                    </strong>
+
+                                </div>
+
+                            </section>
+
+
+                            {/* PRODUCT LIST */}
+
+                            <section className="admin-products">
+
+                                <div className="admin-section-heading">
+
+                                    <div>
+
+                                        <p className="section-eyebrow">
+                                            PRODUCT
+                                            CATALOG
+                                        </p>
+
+                                        <h2>
+                                            All products
+                                        </h2>
+
+                                    </div>
+
+                                    <span>
+                                        {
+                                            products.length
+                                        }{" "}
+                                        items
+                                    </span>
+
+                                </div>
+
+
+                                <div className="admin-product-list">
+
+                                    {products.map(
+                                        (
+                                            product
+                                        ) => (
+                                            <article
+                                                className="admin-product-row"
+                                                key={
+                                                    product._id
+                                                }
+                                            >
+
+                                                <div className="admin-product-info">
+
+                                                    <div className="admin-product-image">
+
+                                                        <img
+                                                            src={
+                                                                product.image
+                                                            }
+                                                            alt={
+                                                                product.name
+                                                            }
+                                                        />
+
+                                                    </div>
+
+
+                                                    <div>
+
+                                                        <p>
+                                                            {
+                                                                product.category
+                                                            }
+                                                        </p>
+
+                                                        <h3>
+                                                            {
+                                                                product.name
+                                                            }
+                                                        </h3>
+
+                                                    </div>
+
+                                                </div>
+
+
+                                                <div className="admin-product-price">
+                                                    ₹
                                                     {
-                                                        product.stock
+                                                        product.price
                                                     }
-                                                </strong>
-
-                                            </div>
+                                                </div>
 
 
-                                            <div className="admin-product-actions">
+                                                <div className="admin-product-stock">
 
-                                                <button
-                                                    onClick={() =>
-                                                        openEditForm(
-                                                            product
-                                                        )
-                                                    }
-                                                >
-                                                    Edit
-                                                </button>
+                                                    <span>
+                                                        Stock
+                                                    </span>
 
-                                                <button
-                                                    className="delete-action"
-                                                    onClick={() =>
-                                                        handleDeleteProduct(
-                                                            product
-                                                        )
-                                                    }
-                                                >
-                                                    Delete
-                                                </button>
+                                                    <strong>
+                                                        {
+                                                            product.stock
+                                                        }
+                                                    </strong>
 
-                                            </div>
-
-                                        </article>
-                                    )
-                                )}
+                                                </div>
 
 
-                                {products.length ===
-                                    0 && (
-                                    <p
-                                        style={{
-                                            padding:
-                                                "40px",
-                                            textAlign:
-                                                "center",
-                                            color:
-                                                "var(--muted-text)",
-                                            fontSize:
-                                                "13px",
-                                        }}
-                                    >
-                                        No products
-                                        found.
-                                    </p>
-                                )}
+                                                <div className="admin-product-actions">
 
-                            </div>
+                                                    <button
+                                                        onClick={() =>
+                                                            openEditForm(
+                                                                product
+                                                            )
+                                                        }
+                                                    >
+                                                        Edit
+                                                    </button>
 
-                        </section>
+                                                    <button
+                                                        className="delete-action"
+                                                        onClick={() =>
+                                                            handleDeleteProduct(
+                                                                product
+                                                            )
+                                                        }
+                                                    >
+                                                        Delete
+                                                    </button>
 
-                    </div>
-                )}
+                                                </div>
+
+                                            </article>
+                                        )
+                                    )}
+
+
+                                    {products.length ===
+                                        0 && (
+                                            <p
+                                                style={{
+                                                    padding:
+                                                        "40px",
+                                                    textAlign:
+                                                        "center",
+                                                    color:
+                                                        "var(--muted-text)",
+                                                    fontSize:
+                                                        "13px",
+                                                }}
+                                            >
+                                                No products
+                                                found.
+                                            </p>
+                                        )}
+
+                                </div>
+
+                            </section>
+
+                        </div>
+                    )}
 
             </div>
 

@@ -29,7 +29,10 @@ export async function POST(request) {
             paymentMethod,
         } = await request.json();
 
-        // Validate address
+        // =========================================
+        // VALIDATE SHIPPING ADDRESS
+        // =========================================
+
         if (
             !shippingAddress?.name ||
             !shippingAddress?.phone ||
@@ -48,11 +51,16 @@ export async function POST(request) {
             );
         }
 
-        // Validate payment method
+        // =========================================
+        // VALIDATE PAYMENT METHOD
+        // =========================================
+
         if (
-            !["upi", "card", "cod"].includes(
-                paymentMethod
-            )
+            ![
+                "upi",
+                "card",
+                "cod",
+            ].includes(paymentMethod)
         ) {
             return Response.json(
                 {
@@ -66,7 +74,10 @@ export async function POST(request) {
 
         await connectDB();
 
-        // Get user's cart
+        // =========================================
+        // GET CART
+        // =========================================
+
         const cart =
             await Cart.findOne({
                 user: userId,
@@ -92,7 +103,9 @@ export async function POST(request) {
         // CHECK STOCK
         // =========================================
 
-        for (const item of cart.items) {
+        for (
+            const item of cart.items
+        ) {
             if (!item.product) {
                 return Response.json(
                     {
@@ -132,8 +145,6 @@ export async function POST(request) {
                     quantity:
                         item.quantity,
 
-                    // Save price at the time
-                    // of purchase
                     price:
                         item.product.price,
                 })
@@ -150,8 +161,7 @@ export async function POST(request) {
                     item
                 ) =>
                     total +
-                    item.product
-                        .price *
+                    item.product.price *
                         item.quantity,
                 0
             );
@@ -179,23 +189,65 @@ export async function POST(request) {
                         ? "pending"
                         : "paid",
 
-                status: "pending",
+                status:
+                    "pending",
+
+                refundStatus:
+                    "not_applicable",
+
+                refundAmount: 0,
             });
 
         // =========================================
-        // DECREASE PRODUCT STOCK
+        // DECREASE STOCK
         // =========================================
 
-        for (const item of cart.items) {
-            await Product.findByIdAndUpdate(
-                item.product._id,
-                {
-                    $inc: {
-                        stock:
-                            -item.quantity,
+        for (
+            const item of cart.items
+        ) {
+            const updatedProduct =
+                await Product.findOneAndUpdate(
+                    {
+                        _id:
+                            item.product._id,
+
+                        stock: {
+                            $gte:
+                                item.quantity,
+                        },
                     },
-                }
-            );
+                    {
+                        $inc: {
+                            stock:
+                                -item.quantity,
+                        },
+                    },
+                    {
+                        new: true,
+                    }
+                );
+
+            if (!updatedProduct) {
+                console.error(
+                    "Stock update failed:",
+                    item.product._id
+                );
+
+                // Demo project:
+                // remove created order
+                await Order.findByIdAndDelete(
+                    order._id
+                );
+
+                return Response.json(
+                    {
+                        success: false,
+                        message:
+                            `Unable to update stock for ${item.product.name}.`,
+                    },
+                    { status: 400 }
+                );
+            }
         }
 
         // =========================================
@@ -209,10 +261,13 @@ export async function POST(request) {
         return Response.json(
             {
                 success: true,
+
                 message:
                     "Order placed successfully.",
+
                 order,
             },
+
             { status: 201 }
         );
 
@@ -225,9 +280,11 @@ export async function POST(request) {
         return Response.json(
             {
                 success: false,
+
                 message:
                     "Failed to place order.",
             },
+
             { status: 500 }
         );
     }
@@ -250,6 +307,7 @@ export async function GET() {
                     message:
                         "Please login first.",
                 },
+
                 { status: 401 }
             );
         }
@@ -281,9 +339,11 @@ export async function GET() {
         return Response.json(
             {
                 success: false,
+
                 message:
                     "Failed to get orders.",
             },
+
             { status: 500 }
         );
     }

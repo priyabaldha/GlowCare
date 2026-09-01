@@ -1,26 +1,57 @@
 "use client";
 
-import { use, useEffect, useState } from "react";
+import {
+    use,
+    useEffect,
+    useState,
+} from "react";
+
 import Link from "next/link";
 import jsPDF from "jspdf";
 
-export default function OrderDetailsPage({ params }) {
+export default function OrderDetailsPage({
+    params,
+}) {
     const { id } = use(params);
 
-    const [order, setOrder] = useState(null);
-    const [loading, setLoading] = useState(true);
+    const [order, setOrder] =
+        useState(null);
+
+    const [loading, setLoading] =
+        useState(true);
+
+    const [cancelling, setCancelling] =
+        useState(false);
+
+    // =========================================
+    // FETCH ORDER
+    // =========================================
 
     useEffect(() => {
         fetchOrder();
+
+        const interval =
+            setInterval(
+                fetchOrder,
+                10000
+            );
+
+        return () =>
+            clearInterval(interval);
     }, [id]);
 
     async function fetchOrder() {
         try {
-            const response = await fetch(
-                "/api/orders"
-            );
+            const response =
+                await fetch(
+                    "/api/orders",
+                    {
+                        cache: "no-store",
+                    }
+                );
 
-            const data = await response.json();
+            const data =
+                await response.json();
 
             if (data.success) {
                 const foundOrder =
@@ -30,7 +61,9 @@ export default function OrderDetailsPage({ params }) {
                             id.toString()
                     );
 
-                setOrder(foundOrder || null);
+                setOrder(
+                    foundOrder || null
+                );
             }
         } catch (error) {
             console.error(
@@ -42,41 +75,102 @@ export default function OrderDetailsPage({ params }) {
         }
     }
 
-    if (loading) {
-        return (
-            <main className="order-details-page">
-                <p>Loading order...</p>
-            </main>
-        );
+    // =========================================
+    // CANCEL ORDER
+    // =========================================
+
+    async function handleCancelOrder() {
+        const reason =
+            window.prompt(
+                "Why do you want to cancel this order?"
+            );
+
+        if (
+            reason === null
+        ) {
+            return;
+        }
+
+        setCancelling(true);
+
+        try {
+            const response =
+                await fetch(
+                    `/api/orders/${id}/cancel`,
+                    {
+                        method: "POST",
+
+                        headers: {
+                            "Content-Type":
+                                "application/json",
+                        },
+
+                        body: JSON.stringify({
+                            reason,
+                        }),
+                    }
+                );
+
+            const data =
+                await response.json();
+
+            if (!response.ok) {
+                alert(
+                    data.message ||
+                        "Unable to cancel order."
+                );
+
+                return;
+            }
+
+            if (
+                data.success
+            ) {
+                setOrder(
+                    data.order
+                );
+
+                alert(
+                    "Cancellation request sent to admin."
+                );
+            }
+
+        } catch (error) {
+            console.error(
+                "Cancel order error:",
+                error
+            );
+
+            alert(
+                "Something went wrong."
+            );
+        } finally {
+            setCancelling(false);
+        }
     }
 
-    if (!order) {
-        return (
-            <main className="order-details-page">
-
-                <h1>
-                    Order not found
-                </h1>
-
-                <Link
-                    href="/orders"
-                    className="primary-button"
-                >
-                    Back to Orders
-                </Link>
-
-            </main>
-        );
-    }
+    // =========================================
+    // INVOICE
+    // =========================================
 
     function downloadInvoice() {
-        const doc = new jsPDF();
+        const doc =
+            new jsPDF();
 
         doc.setFontSize(22);
-        doc.text("GlowCare", 20, 25);
+        doc.text(
+            "GlowCare",
+            20,
+            25
+        );
 
         doc.setFontSize(12);
-        doc.text("INVOICE", 20, 35);
+
+        doc.text(
+            "INVOICE",
+            20,
+            35
+        );
 
         doc.setFontSize(10);
 
@@ -99,13 +193,17 @@ export default function OrderDetailsPage({ params }) {
         );
 
         doc.text(
-            `Order Status: ${order.status}`,
+            `Order Status: ${formatStatus(
+                order.status
+            )}`,
             20,
             72
         );
 
-        // Delivery address
+        // Address
+
         doc.setFontSize(13);
+
         doc.text(
             "Delivery Address",
             20,
@@ -145,7 +243,9 @@ export default function OrderDetailsPage({ params }) {
         );
 
         // Products
+
         doc.setFontSize(13);
+
         doc.text(
             "Order Items",
             20,
@@ -160,11 +260,14 @@ export default function OrderDetailsPage({ params }) {
                     item.price *
                     item.quantity;
 
-                doc.setFontSize(10);
+                doc.setFontSize(
+                    10
+                );
 
                 doc.text(
-                    `${index + 1}. ${item.product?.name ||
-                    "Product"
+                    `${index + 1}. ${
+                        item.product?.name ||
+                        "Product"
                     }`,
                     20,
                     y
@@ -186,7 +289,6 @@ export default function OrderDetailsPage({ params }) {
             }
         );
 
-        // Total
         y += 10;
 
         doc.setFontSize(14);
@@ -210,10 +312,90 @@ export default function OrderDetailsPage({ params }) {
         );
     }
 
+    // =========================================
+    // LOADING
+    // =========================================
+
+    if (loading) {
+        return (
+            <main className="order-details-page">
+                <p>
+                    Loading order...
+                </p>
+            </main>
+        );
+    }
+
+    // =========================================
+    // NOT FOUND
+    // =========================================
+
+    if (!order) {
+        return (
+            <main className="order-details-page">
+                <h1>
+                    Order not found
+                </h1>
+
+                <Link
+                    href="/orders"
+                    className="primary-button"
+                >
+                    Back to Orders
+                </Link>
+            </main>
+        );
+    }
+
+    const canCancel =
+        [
+            "pending",
+            "confirmed",
+        ].includes(
+            order.status
+        );
+
+    const statusSteps = [
+        {
+            key: "pending",
+            label: "Order Placed",
+        },
+
+        {
+            key: "confirmed",
+            label: "Confirmed",
+        },
+
+        {
+            key: "shipped",
+            label: "Shipped",
+        },
+
+        {
+            key: "delivered",
+            label: "Delivered",
+        },
+    ];
+
+    const statusOrder = [
+        "pending",
+        "confirmed",
+        "shipped",
+        "delivered",
+    ];
+
+    const currentIndex =
+        statusOrder.indexOf(
+            order.status
+        );
+
     return (
         <main className="order-details-page">
 
-            {/* Header */}
+            {/* =================================
+                HEADER
+            ================================= */}
+
             <section className="order-details-header">
 
                 <p className="section-eyebrow">
@@ -221,20 +403,305 @@ export default function OrderDetailsPage({ params }) {
                 </p>
 
                 <h1>
-                    Your
-                    <span>order.</span>
+                    Your{" "}
+                    <span>
+                        order.
+                    </span>
                 </h1>
 
                 <p>
                     Order ID:{" "}
-                    <strong>{order._id}</strong>
+                    <strong>
+                        {order._id}
+                    </strong>
                 </p>
 
             </section>
 
             <section className="order-details-content">
 
-                {/* Order Items */}
+                {/* =================================
+                    ORDER STATUS TIMELINE
+                ================================= */}
+
+                <div
+                    className="order-details-card"
+                    style={{
+                        marginBottom:
+                            "14px",
+                    }}
+                >
+                    <h2>
+                        Order status
+                    </h2>
+
+                    {order.status ===
+                        "cancellation_requested" ? (
+                        <div
+                            style={{
+                                marginTop:
+                                    "18px",
+                                padding:
+                                    "18px",
+                                borderRadius:
+                                    "14px",
+                                background:
+                                    "#fff4e5",
+                                color:
+                                    "#795548",
+                            }}
+                        >
+                            <strong>
+                                Cancellation requested
+                            </strong>
+
+                            <p
+                                style={{
+                                    marginTop:
+                                        "7px",
+                                    fontSize:
+                                        "12px",
+                                }}
+                            >
+                                Your cancellation
+                                request is waiting
+                                for admin approval.
+                            </p>
+                        </div>
+                    ) : (
+                        <div
+                            style={{
+                                marginTop:
+                                    "24px",
+                            }}
+                        >
+                            {statusSteps.map(
+                                (
+                                    step,
+                                    index
+                                ) => {
+                                    const completed =
+                                        currentIndex >=
+                                        index;
+
+                                    return (
+                                        <div
+                                            key={
+                                                step.key
+                                            }
+                                            style={{
+                                                display:
+                                                    "flex",
+                                                alignItems:
+                                                    "center",
+                                                gap:
+                                                    "14px",
+                                                marginBottom:
+                                                    index ===
+                                                    statusSteps.length -
+                                                        1
+                                                        ? "0"
+                                                        : "18px",
+                                            }}
+                                        >
+                                            <div
+                                                style={{
+                                                    width:
+                                                        "30px",
+                                                    height:
+                                                        "30px",
+                                                    borderRadius:
+                                                        "50%",
+                                                    display:
+                                                        "flex",
+                                                    alignItems:
+                                                        "center",
+                                                    justifyContent:
+                                                        "center",
+                                                    background:
+                                                        completed
+                                                            ? "var(--espresso-brown)"
+                                                            : "var(--blush-oat)",
+                                                    color:
+                                                        completed
+                                                            ? "var(--milk)"
+                                                            : "var(--muted-text)",
+                                                    fontSize:
+                                                        "12px",
+                                                    fontWeight:
+                                                        "600",
+                                                }}
+                                            >
+                                                {completed
+                                                    ? "✓"
+                                                    : index +
+                                                      1}
+                                            </div>
+
+                                            <div>
+                                                <strong
+                                                    style={{
+                                                        color:
+                                                            "var(--espresso-brown)",
+                                                    }}
+                                                >
+                                                    {
+                                                        step.label
+                                                    }
+                                                </strong>
+                                            </div>
+                                        </div>
+                                    );
+                                }
+                            )}
+                        </div>
+                    )}
+
+                    {/* CANCELLED */}
+
+                    {order.status ===
+                        "cancelled" && (
+                        <div
+                            style={{
+                                marginTop:
+                                    "18px",
+                                padding:
+                                    "18px",
+                                borderRadius:
+                                    "14px",
+                                background:
+                                    "#f9eeee",
+                                color:
+                                    "#8b4c4c",
+                            }}
+                        >
+                            <strong>
+                                Order cancelled
+                            </strong>
+
+                            {order.refundStatus ===
+                                "pending" && (
+                                <p
+                                    style={{
+                                        marginTop:
+                                            "8px",
+                                        fontSize:
+                                            "12px",
+                                    }}
+                                >
+                                    Refund of ₹
+                                    {Number(
+                                        order.refundAmount
+                                    ).toLocaleString(
+                                        "en-IN"
+                                    )}{" "}
+                                    is waiting to
+                                    be processed.
+                                </p>
+                            )}
+
+                            {order.refundStatus ===
+                                "processed" && (
+                                <p
+                                    style={{
+                                        marginTop:
+                                            "8px",
+                                        fontSize:
+                                            "12px",
+                                    }}
+                                >
+                                    ₹
+                                    {Number(
+                                        order.refundAmount
+                                    ).toLocaleString(
+                                        "en-IN"
+                                    )}{" "}
+                                    has been refunded
+                                    successfully.
+                                </p>
+                            )}
+                        </div>
+                    )}
+
+                </div>
+
+                {/* =================================
+                    SHIPPING DETAILS
+                ================================= */}
+
+                {order.status ===
+                    "shipped" ||
+                    order.status ===
+                        "delivered" ? (
+                    <div
+                        className="order-details-card"
+                        style={{
+                            marginBottom:
+                                "14px",
+                        }}
+                    >
+                        <h2>
+                            Shipping
+                        </h2>
+
+                        <div
+                            className="order-info-row"
+                            style={{
+                                marginTop:
+                                    "15px",
+                            }}
+                        >
+                            <span>
+                                Courier
+                            </span>
+
+                            <strong>
+                                {order.courierName ||
+                                    "—"}
+                            </strong>
+                        </div>
+
+                        <div className="order-info-row">
+                            <span>
+                                Tracking Number
+                            </span>
+
+                            <strong>
+                                {order.trackingNumber ||
+                                    "—"}
+                            </strong>
+                        </div>
+
+                        {order.trackingUrl && (
+                            <a
+                                href={
+                                    order.trackingUrl
+                                }
+                                target="_blank"
+                                rel="noreferrer"
+                                style={{
+                                    display:
+                                        "inline-block",
+                                    marginTop:
+                                        "15px",
+                                    color:
+                                        "var(--espresso-brown)",
+                                    fontWeight:
+                                        "600",
+                                    fontSize:
+                                        "12px",
+                                }}
+                            >
+                                Track your package →
+                            </a>
+                        )}
+                    </div>
+                ) : null}
+
+                {/* =================================
+                    ORDER ITEMS
+                ================================= */}
+
                 <div className="order-details-card">
 
                     <h2>
@@ -244,12 +711,14 @@ export default function OrderDetailsPage({ params }) {
                     <div className="order-detail-items">
 
                         {order.items.map(
-                            (item, index) => (
+                            (
+                                item,
+                                index
+                            ) => (
                                 <div
                                     className="order-detail-item"
                                     key={index}
                                 >
-
                                     <div>
                                         <strong>
                                             {
@@ -269,10 +738,13 @@ export default function OrderDetailsPage({ params }) {
 
                                     <strong>
                                         ₹
-                                        {item.price *
-                                            item.quantity}
+                                        {(
+                                            item.price *
+                                            item.quantity
+                                        ).toLocaleString(
+                                            "en-IN"
+                                        )}
                                     </strong>
-
                                 </div>
                             )
                         )}
@@ -281,7 +753,10 @@ export default function OrderDetailsPage({ params }) {
 
                 </div>
 
-                {/* Payment */}
+                {/* =================================
+                    PAYMENT
+                ================================= */}
+
                 <div className="order-details-card">
 
                     <h2>
@@ -304,7 +779,9 @@ export default function OrderDetailsPage({ params }) {
                         </span>
 
                         <strong>
-                            {order.paymentStatus}
+                            {formatStatus(
+                                order.paymentStatus
+                            )}
                         </strong>
                     </div>
 
@@ -314,7 +791,9 @@ export default function OrderDetailsPage({ params }) {
                         </span>
 
                         <strong>
-                            {order.status}
+                            {formatStatus(
+                                order.status
+                            )}
                         </strong>
                     </div>
 
@@ -324,13 +803,21 @@ export default function OrderDetailsPage({ params }) {
                         </span>
 
                         <strong>
-                            ₹{order.totalAmount}
+                            ₹
+                            {Number(
+                                order.totalAmount
+                            ).toLocaleString(
+                                "en-IN"
+                            )}
                         </strong>
                     </div>
 
                 </div>
 
-                {/* Address */}
+                {/* =================================
+                    ADDRESS
+                ================================= */}
+
                 <div className="order-details-card">
 
                     <h2>
@@ -386,7 +873,10 @@ export default function OrderDetailsPage({ params }) {
 
                 </div>
 
-                {/* Actions */}
+                {/* =================================
+                    ACTIONS
+                ================================= */}
+
                 <div className="order-detail-actions">
 
                     <Link
@@ -396,19 +886,83 @@ export default function OrderDetailsPage({ params }) {
                         ← Back to Orders
                     </Link>
 
+                    {canCancel && (
+                        <button
+                            type="button"
+                            disabled={
+                                cancelling
+                            }
+                            onClick={
+                                handleCancelOrder
+                            }
+                            style={{
+                                padding:
+                                    "12px 18px",
+                                border:
+                                    "1px solid #d99",
+                                borderRadius:
+                                    "999px",
+                                background:
+                                    "transparent",
+                                color:
+                                    "#9b5555",
+                                cursor:
+                                    cancelling
+                                        ? "not-allowed"
+                                        : "pointer",
+                                fontFamily:
+                                    "inherit",
+                                fontSize:
+                                    "11px",
+                                fontWeight:
+                                    "600",
+                            }}
+                        >
+                            {cancelling
+                                ? "Requesting..."
+                                : "Cancel Order"}
+                        </button>
+                    )}
+
                     <button
                         type="button"
                         className="invoice-button"
-                        onClick={downloadInvoice}
+                        onClick={
+                            downloadInvoice
+                        }
                     >
                         Download Invoice
-                        <span>↓</span>
+                        <span>
+                            ↓
+                        </span>
                     </button>
 
                 </div>
 
             </section>
-
         </main>
     );
+}
+
+// =========================================
+// FORMAT STATUS
+// =========================================
+
+function formatStatus(
+    value
+) {
+    if (!value) {
+        return "—";
+    }
+
+    return value
+        .replaceAll(
+            "_",
+            " "
+        )
+        .replace(
+            /\b\w/g,
+            (letter) =>
+                letter.toUpperCase()
+        );
 }

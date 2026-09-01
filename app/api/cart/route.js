@@ -1,5 +1,6 @@
 import connectDB from "../../../lib/db";
 import Cart from "../../../models/Cart";
+import Product from "../../../models/Product";
 import { getSessionUserId } from "../../../lib/auth";
 
 // GET → get current user's cart

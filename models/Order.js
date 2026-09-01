@@ -25,6 +25,7 @@ const orderSchema = new mongoose.Schema(
                 price: {
                     type: Number,
                     required: true,
+                    min: 0,
                 },
             },
         ],
@@ -32,6 +33,7 @@ const orderSchema = new mongoose.Schema(
         totalAmount: {
             type: Number,
             required: true,
+            min: 0,
         },
 
         paymentMethod: {
@@ -42,7 +44,12 @@ const orderSchema = new mongoose.Schema(
 
         paymentStatus: {
             type: String,
-            enum: ["pending", "paid", "failed"],
+            enum: [
+                "pending",
+                "paid",
+                "failed",
+                "refunded",
+            ],
             default: "pending",
         },
 
@@ -78,6 +85,10 @@ const orderSchema = new mongoose.Schema(
             },
         },
 
+        // =========================================
+        // ORDER STATUS
+        // =========================================
+
         status: {
             type: String,
             enum: [
@@ -85,11 +96,106 @@ const orderSchema = new mongoose.Schema(
                 "confirmed",
                 "shipped",
                 "delivered",
+                "cancellation_requested",
                 "cancelled",
             ],
             default: "pending",
         },
+
+        // =========================================
+        // CANCELLATION
+        // =========================================
+
+        cancellationReason: {
+            type: String,
+            default: "",
+            trim: true,
+        },
+
+        cancellationRequestedAt: {
+            type: Date,
+            default: null,
+        },
+
+        cancellationPreviousStatus: {
+            type: String,
+            enum: [
+                "pending",
+                "confirmed",
+                null,
+            ],
+            default: null,
+        },
+
+        cancelledAt: {
+            type: Date,
+            default: null,
+        },
+
+        // =========================================
+        // SHIPPING
+        // =========================================
+
+        courierName: {
+            type: String,
+            default: "",
+            trim: true,
+        },
+
+        trackingNumber: {
+            type: String,
+            default: "",
+            trim: true,
+        },
+
+        trackingUrl: {
+            type: String,
+            default: "",
+            trim: true,
+        },
+
+        shippedAt: {
+            type: Date,
+            default: null,
+        },
+
+        deliveredAt: {
+            type: Date,
+            default: null,
+        },
+
+        // =========================================
+        // REFUND
+        // =========================================
+
+        refundAmount: {
+            type: Number,
+            default: 0,
+            min: 0,
+        },
+
+        refundStatus: {
+            type: String,
+            enum: [
+                "not_applicable",
+                "pending",
+                "processed",
+            ],
+            default: "not_applicable",
+        },
+
+        refundId: {
+            type: String,
+            default: "",
+            trim: true,
+        },
+
+        refundedAt: {
+            type: Date,
+            default: null,
+        },
     },
+
     {
         timestamps: true,
     }
