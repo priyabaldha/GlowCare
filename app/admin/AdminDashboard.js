@@ -25,6 +25,13 @@ export default function AdminPage() {
 
     const [orders, setOrders] = useState([]);
 
+    const [users, setUsers] = useState([]);
+const [usersLoading, setUsersLoading] =
+    useState(false);
+
+const [userSearch, setUserSearch] =
+    useState("");
+
     const [ordersLoading, setOrdersLoading] =
         useState(false);
 
@@ -59,6 +66,7 @@ export default function AdminPage() {
     useEffect(() => {
         fetchProducts();
         fetchOrders();
+        fetchUsers();
     }, []);
 
     async function fetchProducts() {
@@ -121,7 +129,46 @@ export default function AdminPage() {
             setOrdersLoading(false);
         }
     }
+// =========================================
+// FETCH ADMIN USERS
+// =========================================
 
+async function fetchUsers() {
+    setUsersLoading(true);
+
+    try {
+        const response =
+            await fetch(
+                "/api/admin/users"
+            );
+
+        const data =
+            await response.json();
+
+        if (!response.ok) {
+            console.error(
+                data.message
+            );
+
+            return;
+        }
+
+        if (data.success) {
+            setUsers(
+                data.users || []
+            );
+        }
+
+    } catch (error) {
+        console.error(
+            "Failed to fetch users:",
+            error
+        );
+
+    } finally {
+        setUsersLoading(false);
+    }
+}
 // =========================================
 // UPDATE ORDER STATUS
 // =========================================
@@ -958,6 +1005,63 @@ async function updateOrderStatus(
                     ),
                 0
             );
+
+        // =========================================
+// USER VALUES
+// =========================================
+
+const customerUsers =
+    users.filter(
+        (user) =>
+            user.role === "user"
+    );
+
+const filteredUsers =
+    customerUsers.filter(
+        (user) => {
+            const search =
+                userSearch
+                    .toLowerCase()
+                    .trim();
+
+            if (!search) {
+                return true;
+            }
+
+            return (
+                user.name
+                    ?.toLowerCase()
+                    .includes(search) ||
+
+                user.email
+                    ?.toLowerCase()
+                    .includes(search)
+            );
+        }
+    );
+
+const totalCustomers =
+    customerUsers.length;
+
+const totalCustomerOrders =
+    customerUsers.reduce(
+        (total, user) =>
+            total +
+            Number(
+                user.orderCount || 0
+            ),
+        0
+    );
+
+const totalCustomerSpent =
+    customerUsers.reduce(
+        (total, user) =>
+            total +
+            Number(
+                user.totalSpent || 0
+            ),
+        0
+    );
 
     // =========================================
     // SIDEBAR ITEM
@@ -2889,62 +2993,57 @@ async function updateOrderStatus(
                                                         </div>
 
 
-                                                        {/* CUSTOMER */}
+                                                       {/* CUSTOMER */}
 
-                                                        <div>
+<div>
 
-                                                            <span
-                                                                style={{
-                                                                    display:
-                                                                        "block",
-                                                                    color:
-                                                                        "var(--muted-text)",
-                                                                    fontSize:
-                                                                        "9px",
-                                                                    letterSpacing:
-                                                                        "0.8px",
-                                                                    marginBottom:
-                                                                        "5px",
-                                                                }}
-                                                            >
-                                                                CUSTOMER
-                                                            </span>
+    <span
+        style={{
+            display: "block",
+            color: "var(--muted-text)",
+            fontSize: "9px",
+            letterSpacing: "0.8px",
+            marginBottom: "5px",
+        }}
+    >
+        CUSTOMER
+    </span>
 
-                                                            <strong
-                                                                style={{
-                                                                    display:
-                                                                        "block",
-                                                                    color:
-                                                                        "var(--espresso-brown)",
-                                                                    fontFamily:
-                                                                        "Georgia, serif",
-                                                                    fontWeight:
-                                                                        "400",
-                                                                    fontSize:
-                                                                        "15px",
-                                                                }}
-                                                            >
-                                                                {
-                                                                    customerName
-                                                                }
-                                                            </strong>
+    <strong
+        style={{
+            display: "block",
+            color: "var(--espresso-brown)",
+            fontFamily: "Georgia, serif",
+            fontWeight: "400",
+            fontSize: "15px",
+        }}
+    >
+        {order.user?.name || customerName || "Unknown Customer"}
+    </strong>
 
-                                                            <span
-                                                                style={{
-                                                                    color:
-                                                                        "var(--muted-text)",
-                                                                    fontSize:
-                                                                        "9px",
-                                                                }}
-                                                            >
-                                                                {
-                                                                    order
-                                                                        .user
-                                                                        ?.email
-                                                                }
-                                                            </span>
+    <span
+        style={{
+            display: "block",
+            color: "var(--muted-text)",
+            fontSize: "9px",
+            marginTop: "3px",
+        }}
+    >
+        {order.user?.email || "No email"}
+    </span>
 
-                                                        </div>
+    <span
+        style={{
+            display: "block",
+            color: "var(--muted-text)",
+            fontSize: "9px",
+            marginTop: "3px",
+        }}
+    >
+        Phone: {order.shippingAddress?.phone || "N/A"}
+    </span>
+
+</div>
 
 
                                                         {/* DATE */}
@@ -4133,91 +4232,556 @@ async function updateOrderStatus(
 
 
                 {/* =================================
-                    USERS
-                ================================= */}
+    USERS
+================================= */}
 
-                {activeSection ===
-                    "users" && (
-                        <div
-                            style={{
-                                padding:
-                                    "50px 5% 90px",
-                            }}
-                        >
+{activeSection ===
+    "users" && (
+        <div
+            style={{
+                padding:
+                    "50px 5% 90px",
+            }}
+        >
 
-                            <div className="admin-header">
+            {/* HEADER */}
 
-                                <div>
+            <section
+                className="admin-header"
+            >
 
-                                    <p className="section-eyebrow">
-                                        GLOWCARE
-                                        ADMIN
-                                    </p>
+                <div>
 
-                                    <h1>
-                                        Customer
-                                        <span>
-                                            accounts.
-                                        </span>
-                                    </h1>
+                    <p className="section-eyebrow">
+                        GLOWCARE ADMIN
+                    </p>
 
-                                </div>
+                    <h1>
+                        Customer
+                        <span>
+                            accounts.
+                        </span>
+                    </h1>
 
-                            </div>
+                    <p
+                        style={{
+                            marginTop:
+                                "16px",
+                            color:
+                                "var(--muted-text)",
+                            fontSize:
+                                "13px",
+                        }}
+                    >
+                        Manage registered
+                        GlowCare customers
+                        and view their
+                        purchase activity.
+                    </p>
+
+                </div>
+
+            </section>
 
 
-                            <section
-                                className="admin-product-form"
-                                style={{
-                                    marginTop:
-                                        "45px",
-                                    textAlign:
-                                        "center",
-                                }}
-                            >
+            {/* USER STATS */}
 
-                                <p className="section-eyebrow">
-                                    COMING NEXT
-                                </p>
+            <section
+                style={{
+                    display:
+                        "grid",
+                    gridTemplateColumns:
+                        "repeat(3, minmax(0, 1fr))",
+                    gap: "14px",
+                    marginTop:
+                        "40px",
+                    marginBottom:
+                        "30px",
+                }}
+            >
 
-                                <h2
-                                    style={{
-                                        marginTop:
-                                            "8px",
-                                        color:
-                                            "var(--espresso-brown)",
-                                        fontFamily:
-                                            "Georgia, serif",
-                                        fontSize:
-                                            "32px",
-                                        fontWeight:
-                                            "400",
-                                    }}
-                                >
-                                    Customer
-                                    management
-                                </h2>
+                <div
+                    className="admin-stat-card"
+                >
 
-                                <p
-                                    style={{
-                                        marginTop:
-                                            "12px",
-                                        color:
-                                            "var(--muted-text)",
-                                        fontSize:
-                                            "13px",
-                                    }}
-                                >
-                                    We'll connect your
-                                    registered users
-                                    here after order
-                                    management.
-                                </p>
+                    <span>
+                        Customers
+                    </span>
 
-                            </section>
+                    <strong>
+                        {totalCustomers}
+                    </strong>
 
-                        </div>
-                    )}
+                    <p
+                        style={{
+                            marginTop:
+                                "10px",
+                            color:
+                                "var(--muted-text)",
+                            fontSize:
+                                "10px",
+                        }}
+                    >
+                        Registered users
+                    </p>
+
+                </div>
+
+
+                <div
+                    className="admin-stat-card"
+                >
+
+                    <span>
+                        Customer Orders
+                    </span>
+
+                    <strong>
+                        {totalCustomerOrders}
+                    </strong>
+
+                    <p
+                        style={{
+                            marginTop:
+                                "10px",
+                            color:
+                                "var(--muted-text)",
+                            fontSize:
+                                "10px",
+                        }}
+                    >
+                        Orders placed
+                    </p>
+
+                </div>
+
+
+                <div
+                    className="admin-stat-card"
+                >
+
+                    <span>
+                        Customer Spending
+                    </span>
+
+                    <strong
+                        style={{
+                            fontSize:
+                                "30px",
+                        }}
+                    >
+                        ₹
+                        {totalCustomerSpent.toLocaleString(
+                            "en-IN"
+                        )}
+                    </strong>
+
+                    <p
+                        style={{
+                            marginTop:
+                                "10px",
+                            color:
+                                "var(--muted-text)",
+                            fontSize:
+                                "10px",
+                        }}
+                    >
+                        Non-cancelled orders
+                    </p>
+
+                </div>
+
+            </section>
+
+
+            {/* USERS CARD */}
+
+            <section
+                className="admin-products"
+            >
+
+                {/* SECTION HEADER */}
+
+                <div
+                    className="admin-section-heading"
+                    style={{
+                        alignItems:
+                            "center",
+                    }}
+                >
+
+                    <div>
+
+                        <p className="section-eyebrow">
+                            REGISTERED CUSTOMERS
+                        </p>
+
+                        <h2>
+                            All customers
+                        </h2>
+
+                    </div>
+
+                    <span>
+                        {customerUsers.length}
+                        {" "}
+                        customers
+                    </span>
+
+                </div>
+
+
+                {/* SEARCH */}
+
+                <div
+                    style={{
+                        marginTop:
+                            "20px",
+                        marginBottom:
+                            "25px",
+                    }}
+                >
+
+                    <input
+                        type="text"
+                        value={
+                            userSearch
+                        }
+                        onChange={(event) =>
+                            setUserSearch(
+                                event.target.value
+                            )
+                        }
+                        placeholder="Search by name or email..."
+                        style={{
+                            width:
+                                "100%",
+                            padding:
+                                "14px 16px",
+                            border:
+                                "1px solid var(--light-border)",
+                            borderRadius:
+                                "10px",
+                            background:
+                                "var(--warm-white)",
+                            color:
+                                "var(--espresso-brown)",
+                            fontFamily:
+                                "inherit",
+                            fontSize:
+                                "12px",
+                            outline:
+                                "none",
+                            boxSizing:
+                                "border-box",
+                        }}
+                    />
+
+                </div>
+
+
+                {/* LOADING */}
+
+                {usersLoading ? (
+
+                    <div
+                        style={{
+                            padding:
+                                "60px 20px",
+                            textAlign:
+                                "center",
+                            color:
+                                "var(--muted-text)",
+                            fontSize:
+                                "13px",
+                        }}
+                    >
+                        Loading customers...
+                    </div>
+
+                ) : filteredUsers.length ===
+                  0 ? (
+
+                    <div
+                        style={{
+                            padding:
+                                "60px 20px",
+                            textAlign:
+                                "center",
+                            color:
+                                "var(--muted-text)",
+                            fontSize:
+                                "13px",
+                        }}
+                    >
+
+                        {customerUsers.length ===
+                        0
+                            ? "No registered customers yet."
+                            : "No customers match your search."}
+
+                    </div>
+
+                ) : (
+
+                    <div
+                        style={{
+                            display:
+                                "flex",
+                            flexDirection:
+                                "column",
+                            gap: "10px",
+                        }}
+                    >
+
+                        {filteredUsers.map(
+                            (user) => {
+
+                                const initials =
+                                    user.name
+                                        ?.trim()
+                                        .charAt(0)
+                                        .toUpperCase() ||
+                                    "U";
+
+                                return (
+                                    <div
+                                        key={
+                                            user._id
+                                        }
+                                        style={{
+                                            display:
+                                                "grid",
+                                            gridTemplateColumns:
+                                                "50px minmax(180px, 1.4fr) 100px 130px 130px",
+                                            alignItems:
+                                                "center",
+                                            gap:
+                                                "16px",
+                                            padding:
+                                                "16px",
+                                            border:
+                                                "1px solid var(--light-border)",
+                                            borderRadius:
+                                                "12px",
+                                            background:
+                                                "var(--milk)",
+                                        }}
+                                    >
+
+                                        {/* AVATAR */}
+
+                                        <div
+                                            style={{
+                                                width:
+                                                    "44px",
+                                                height:
+                                                    "44px",
+                                                borderRadius:
+                                                    "50%",
+                                                background:
+                                                    "var(--blush-oat)",
+                                                display:
+                                                    "flex",
+                                                alignItems:
+                                                    "center",
+                                                justifyContent:
+                                                    "center",
+                                                color:
+                                                    "var(--cocoa-taupe)",
+                                                fontFamily:
+                                                    "Georgia, serif",
+                                                fontSize:
+                                                    "17px",
+                                            }}
+                                        >
+                                            {
+                                                initials
+                                            }
+                                        </div>
+
+
+                                        {/* CUSTOMER */}
+
+                                        <div>
+
+                                            <strong
+                                                style={{
+                                                    display:
+                                                        "block",
+                                                    color:
+                                                        "var(--espresso-brown)",
+                                                    fontFamily:
+                                                        "Georgia, serif",
+                                                    fontWeight:
+                                                        "400",
+                                                    fontSize:
+                                                        "15px",
+                                                }}
+                                            >
+                                                {
+                                                    user.name
+                                                }
+                                            </strong>
+
+                                            <span
+                                                style={{
+                                                    display:
+                                                        "block",
+                                                    marginTop:
+                                                        "4px",
+                                                    color:
+                                                        "var(--muted-text)",
+                                                    fontSize:
+                                                        "10px",
+                                                }}
+                                            >
+                                                {
+                                                    user.email
+                                                }
+                                            </span>
+
+                                        </div>
+
+
+                                        {/* ORDERS */}
+
+                                        <div>
+
+                                            <span
+                                                style={{
+                                                    display:
+                                                        "block",
+                                                    color:
+                                                        "var(--muted-text)",
+                                                    fontSize:
+                                                        "9px",
+                                                    letterSpacing:
+                                                        "0.7px",
+                                                    marginBottom:
+                                                        "5px",
+                                                }}
+                                            >
+                                                ORDERS
+                                            </span>
+
+                                            <strong
+                                                style={{
+                                                    color:
+                                                        "var(--espresso-brown)",
+                                                    fontSize:
+                                                        "14px",
+                                                }}
+                                            >
+                                                {
+                                                    user.orderCount
+                                                }
+                                            </strong>
+
+                                        </div>
+
+
+                                        {/* SPENT */}
+
+                                        <div>
+
+                                            <span
+                                                style={{
+                                                    display:
+                                                        "block",
+                                                    color:
+                                                        "var(--muted-text)",
+                                                    fontSize:
+                                                        "9px",
+                                                    letterSpacing:
+                                                        "0.7px",
+                                                    marginBottom:
+                                                        "5px",
+                                                }}
+                                            >
+                                                TOTAL SPENT
+                                            </span>
+
+                                            <strong
+                                                style={{
+                                                    color:
+                                                        "var(--espresso-brown)",
+                                                    fontSize:
+                                                        "14px",
+                                                }}
+                                            >
+                                                ₹
+                                                {Number(
+                                                    user.totalSpent ||
+                                                        0
+                                                ).toLocaleString(
+                                                    "en-IN"
+                                                )}
+                                            </strong>
+
+                                        </div>
+
+
+                                        {/* JOINED */}
+
+                                        <div>
+
+                                            <span
+                                                style={{
+                                                    display:
+                                                        "block",
+                                                    color:
+                                                        "var(--muted-text)",
+                                                    fontSize:
+                                                        "9px",
+                                                    letterSpacing:
+                                                        "0.7px",
+                                                    marginBottom:
+                                                        "5px",
+                                                }}
+                                            >
+                                                JOINED
+                                            </span>
+
+                                            <span
+                                                style={{
+                                                    color:
+                                                        "var(--espresso-brown)",
+                                                    fontSize:
+                                                        "11px",
+                                                }}
+                                            >
+                                                {user.createdAt
+                                                    ? new Date(
+                                                          user.createdAt
+                                                      ).toLocaleDateString(
+                                                          "en-IN",
+                                                          {
+                                                              day:
+                                                                  "2-digit",
+                                                              month:
+                                                                  "short",
+                                                              year:
+                                                                  "numeric",
+                                                          }
+                                                      )
+                                                    : "—"}
+                                            </span>
+
+                                        </div>
+
+                                    </div>
+                                );
+                            }
+                        )}
+
+                    </div>
+                )}
+
+            </section>
+
+        </div>
+    )}
 
 
                 {/* =================================
