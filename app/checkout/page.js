@@ -2,8 +2,7 @@
 
 import Link from "next/link";
 import { useCart } from "../../context/CartContext";
-import { useState } from "react";
-
+import { useEffect, useState } from "react";
 export default function CheckoutPage() {
     const {
         cartItems,
@@ -42,6 +41,67 @@ export default function CheckoutPage() {
             ...current,
             [name]: value,
         }));
+    }
+
+    // =========================================
+    // LOAD SAVED PROFILE
+    // =========================================
+
+    useEffect(() => {
+        fetchProfile();
+    }, []);
+
+    async function fetchProfile() {
+        try {
+            const response = await fetch(
+                "/api/profile"
+            );
+
+            if (!response.ok) {
+                return;
+            }
+
+            const data =
+                await response.json();
+
+            if (!data.success || !data.user) {
+                return;
+            }
+
+            setFormData((current) => ({
+                ...current,
+
+                name:
+                    data.user.name ||
+                    current.name,
+
+                phone:
+                    data.user.phone ||
+                    current.phone,
+
+                address:
+                    data.user.address?.street ||
+                    current.address,
+
+                city:
+                    data.user.address?.city ||
+                    current.city,
+
+                state:
+                    data.user.address?.state ||
+                    current.state,
+
+                pincode:
+                    data.user.address?.pincode ||
+                    current.pincode,
+            }));
+
+        } catch (error) {
+            console.error(
+                "Load checkout profile error:",
+                error
+            );
+        }
     }
 
     function handleCardChange(event) {
@@ -108,7 +168,7 @@ export default function CheckoutPage() {
             ) {
                 alert(
                     data.message ||
-                        "Failed to place order."
+                    "Failed to place order."
                 );
 
                 setLoading(false);
@@ -192,6 +252,18 @@ export default function CheckoutPage() {
                     onSubmit={handleSubmit}
                 >
 
+                    <p
+                        style={{
+                            marginTop: "-8px",
+                            marginBottom: "20px",
+                            color: "var(--muted-text)",
+                            fontSize: "11px",
+                        }}
+                    >
+                        Your saved profile details are filled
+                        automatically. You can edit them for this
+                        order.
+                    </p>
                     <h2>
                         Delivery details
                     </h2>
@@ -343,12 +415,11 @@ export default function CheckoutPage() {
                             {/* UPI */}
                             <button
                                 type="button"
-                                className={`payment-option ${
-                                    paymentMethod ===
-                                    "upi"
+                                className={`payment-option ${paymentMethod ===
+                                        "upi"
                                         ? "payment-selected"
                                         : ""
-                                }`}
+                                    }`}
                                 onClick={() =>
                                     setPaymentMethod(
                                         "upi"
@@ -377,12 +448,11 @@ export default function CheckoutPage() {
                             {/* Card */}
                             <button
                                 type="button"
-                                className={`payment-option ${
-                                    paymentMethod ===
-                                    "card"
+                                className={`payment-option ${paymentMethod ===
+                                        "card"
                                         ? "payment-selected"
                                         : ""
-                                }`}
+                                    }`}
                                 onClick={() =>
                                     setPaymentMethod(
                                         "card"
@@ -410,12 +480,11 @@ export default function CheckoutPage() {
                             {/* COD */}
                             <button
                                 type="button"
-                                className={`payment-option ${
-                                    paymentMethod ===
-                                    "cod"
+                                className={`payment-option ${paymentMethod ===
+                                        "cod"
                                         ? "payment-selected"
                                         : ""
-                                }`}
+                                    }`}
                                 onClick={() =>
                                     setPaymentMethod(
                                         "cod"
@@ -448,74 +517,29 @@ export default function CheckoutPage() {
                     {/* Card Details */}
                     {paymentMethod ===
                         "card" && (
-                        <div className="card-details">
+                            <div className="card-details">
 
-                            <h2>
-                                Card details
-                            </h2>
-
-                            <div className="checkout-field">
-
-                                <label>
-                                    Card Number
-                                </label>
-
-                                <input
-                                    type="text"
-                                    name="cardNumber"
-                                    value={
-                                        cardData.cardNumber
-                                    }
-                                    onChange={
-                                        handleCardChange
-                                    }
-                                    placeholder="1234 5678 9012 3456"
-                                    maxLength="19"
-                                    required
-                                />
-
-                            </div>
-
-                            <div className="checkout-field">
-
-                                <label>
-                                    Card Holder Name
-                                </label>
-
-                                <input
-                                    type="text"
-                                    name="cardName"
-                                    value={
-                                        cardData.cardName
-                                    }
-                                    onChange={
-                                        handleCardChange
-                                    }
-                                    placeholder="Name on card"
-                                    required
-                                />
-
-                            </div>
-
-                            <div className="checkout-row">
+                                <h2>
+                                    Card details
+                                </h2>
 
                                 <div className="checkout-field">
 
                                     <label>
-                                        Expiry
+                                        Card Number
                                     </label>
 
                                     <input
                                         type="text"
-                                        name="expiry"
+                                        name="cardNumber"
                                         value={
-                                            cardData.expiry
+                                            cardData.cardNumber
                                         }
                                         onChange={
                                             handleCardChange
                                         }
-                                        placeholder="MM / YY"
-                                        maxLength="7"
+                                        placeholder="1234 5678 9012 3456"
+                                        maxLength="19"
                                         required
                                     />
 
@@ -524,58 +548,103 @@ export default function CheckoutPage() {
                                 <div className="checkout-field">
 
                                     <label>
-                                        CVV
+                                        Card Holder Name
                                     </label>
 
                                     <input
-                                        type="password"
-                                        name="cvv"
+                                        type="text"
+                                        name="cardName"
                                         value={
-                                            cardData.cvv
+                                            cardData.cardName
                                         }
                                         onChange={
                                             handleCardChange
                                         }
-                                        placeholder="•••"
-                                        maxLength="4"
+                                        placeholder="Name on card"
                                         required
                                     />
 
                                 </div>
 
+                                <div className="checkout-row">
+
+                                    <div className="checkout-field">
+
+                                        <label>
+                                            Expiry
+                                        </label>
+
+                                        <input
+                                            type="text"
+                                            name="expiry"
+                                            value={
+                                                cardData.expiry
+                                            }
+                                            onChange={
+                                                handleCardChange
+                                            }
+                                            placeholder="MM / YY"
+                                            maxLength="7"
+                                            required
+                                        />
+
+                                    </div>
+
+                                    <div className="checkout-field">
+
+                                        <label>
+                                            CVV
+                                        </label>
+
+                                        <input
+                                            type="password"
+                                            name="cvv"
+                                            value={
+                                                cardData.cvv
+                                            }
+                                            onChange={
+                                                handleCardChange
+                                            }
+                                            placeholder="•••"
+                                            maxLength="4"
+                                            required
+                                        />
+
+                                    </div>
+
+                                </div>
+
+                                <p className="demo-payment-note">
+                                    Demo payment only. No
+                                    real money will be charged.
+                                </p>
+
                             </div>
-
-                            <p className="demo-payment-note">
-                                Demo payment only. No
-                                real money will be charged.
-                            </p>
-
-                        </div>
-                    )}
+                        )}
 
                     {/* UPI Details */}
                     {paymentMethod ===
                         "upi" && (
-                        <div className="upi-details">
+                            <div className="upi-details">
 
-                            <h2>
-                                UPI payment
-                            </h2>
+                                <h2>
+                                    UPI payment
+                                </h2>
 
-                            <p>
-                                This is a demo
-                                payment. Click
-                                the button below
-                                to complete your
-                                order.
-                            </p>
+                                <p>
+                                    This is a demo
+                                    payment. Click
+                                    the button below
+                                    to complete your
+                                    order.
+                                </p>
 
-                            <div className="demo-upi-box">
-                                UPI PAYMENT
+                                <div className="demo-upi-box">
+                                    UPI PAYMENT
+                                </div>
+
                             </div>
-
-                        </div>
-                    )}
+                        )}
 
                     {/* Submit */}
                     <button
@@ -586,9 +655,9 @@ export default function CheckoutPage() {
                         {loading
                             ? "Processing..."
                             : paymentMethod ===
-                              "cod"
-                            ? "Place Order"
-                            : `Pay ₹${cartTotal}`}
+                                "cod"
+                                ? "Place Order"
+                                : `Pay ₹${cartTotal}`}
 
                         <span>
                             →

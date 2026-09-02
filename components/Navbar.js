@@ -351,12 +351,21 @@ export default function Navbar() {
 
                 {/* Logged-in user */}
 
-                <span className="navbar-user">
-                  {user.role ===
-                  "admin"
-                    ? "Admin"
-                    : `Hi, ${user.name}`}
-                </span>
+                {user.role === "admin" ? (
+                  <span className="navbar-user">
+                    Admin
+                  </span>
+                ) : (
+                  <Link
+                    href="/profile"
+                    className="navbar-user"
+                    style={{
+                      textDecoration: "none",
+                    }}
+                  >
+                    Hi, {user.name}
+                  </Link>
+                )}
 
 
                 {/* Logout */}

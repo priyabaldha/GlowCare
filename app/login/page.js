@@ -114,7 +114,10 @@ export default function LoginPage() {
 
                     <div className="auth-field">
 
-                        <label>Password</label>
+                        <div className="password-label-row">
+
+                            <label>Password</label>
+                        </div>
 
                         <input
                             type="password"
@@ -124,6 +127,12 @@ export default function LoginPage() {
                             placeholder="Your password"
                             required
                         />
+                        <Link
+                            href="/forgot-password"
+                            className="forgot-password-link"
+                        >
+                            Forgot password?
+                        </Link>
 
                     </div>
 

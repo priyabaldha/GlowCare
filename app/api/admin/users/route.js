@@ -3,17 +3,15 @@ import User from "../../../../models/User";
 import Order from "../../../../models/Order";
 import { getSessionUserId } from "../../../../lib/auth";
 
-
-// =========================================
-// GET → ALL USERS FOR ADMIN
-// =========================================
-
 export async function GET() {
     try {
-        const adminId =
-            await getSessionUserId();
+        // =========================================
+        // CHECK LOGIN
+        // =========================================
 
-        if (!adminId) {
+        const userId = await getSessionUserId();
+
+        if (!userId) {
             return Response.json(
                 {
                     success: false,
@@ -23,15 +21,18 @@ export async function GET() {
             );
         }
 
+        // =========================================
+        // CONNECT DATABASE
+        // =========================================
+
         await connectDB();
 
         // =========================================
         // CHECK ADMIN
         // =========================================
 
-        const admin =
-            await User.findById(adminId)
-                .select("role");
+        const admin = await User.findById(userId)
+            .select("role");
 
         if (!admin) {
             return Response.json(
@@ -54,118 +55,122 @@ export async function GET() {
         }
 
         // =========================================
-        // GET USERS
+        // GET CUSTOMERS
         // =========================================
 
-        const users =
-            await User.find()
-                .select(
-                    "-password"
-                )
-                .sort({
-                    createdAt: -1,
-                })
-                .lean();
+        const users = await User.find({
+            role: "user",
+        })
+            .select("-password")
+            .sort({ createdAt: -1 })
+            .lean();
 
         // =========================================
-        // GET ORDER INFORMATION
+        // GET ORDER STATISTICS
         // =========================================
 
-        const orderStats =
-            await Order.aggregate([
-                {
-                    $match: {
-                        status: {
-                            $ne: "cancelled",
-                        },
+        const orderStats = await Order.aggregate([
+            {
+                $match: {
+                    status: {
+                        $ne: "cancelled",
                     },
                 },
+            },
+            {
+                $group: {
+                    _id: "$user",
 
-                {
-                    $group: {
-                        _id: "$user",
+                    orderCount: {
+                        $sum: 1,
+                    },
 
-                        orderCount: {
-                            $sum: 1,
-                        },
-
-                        totalSpent: {
-                            $sum: "$totalAmount",
-                        },
+                    totalSpent: {
+                        $sum: "$totalAmount",
                     },
                 },
-            ]);
+            },
+        ]);
 
         // =========================================
-        // ADD ORDER DATA TO USERS
+        // MAP ORDER STATS
         // =========================================
 
-        const statsMap =
-            new Map(
-                orderStats.map(
-                    (stat) => [
-                        stat._id.toString(),
-                        {
-                            orderCount:
-                                stat.orderCount,
+        const statsMap = new Map();
 
-                            totalSpent:
-                                stat.totalSpent,
-                        },
-                    ]
-                )
+        orderStats.forEach((stat) => {
+            statsMap.set(
+                stat._id?.toString(),
+                {
+                    orderCount: stat.orderCount || 0,
+                    totalSpent: stat.totalSpent || 0,
+                }
             );
+        });
 
-        const usersWithStats =
-            users.map((user) => {
-                const stats =
-                    statsMap.get(
-                        user._id.toString()
-                    );
+        // =========================================
+        // ADD STATS TO USERS
+        // =========================================
 
-                return {
-                    ...user,
-
-                    orderCount:
-                        stats?.orderCount || 0,
-
-                    totalSpent:
-                        stats?.totalSpent || 0,
+        const customers = users.map((user) => {
+            const stats =
+                statsMap.get(user._id.toString()) || {
+                    orderCount: 0,
+                    totalSpent: 0,
                 };
-            });
+
+            return {
+                ...user,
+
+                orderCount:
+                    stats.orderCount,
+
+                totalSpent:
+                    stats.totalSpent,
+            };
+        });
 
         // =========================================
         // SUMMARY
         // =========================================
 
-        const totalUsers =
-            users.filter(
-                (user) =>
-                    user.role === "user"
-            ).length;
+        const totalCustomers =
+            customers.length;
 
-        const totalAdmins =
-            users.filter(
-                (user) =>
-                    user.role === "admin"
-            ).length;
+        const totalOrders =
+            customers.reduce(
+                (total, customer) =>
+                    total +
+                    customer.orderCount,
+                0
+            );
+
+        const totalSpent =
+            customers.reduce(
+                (total, customer) =>
+                    total +
+                    customer.totalSpent,
+                0
+            );
+
+        // =========================================
+        // RESPONSE
+        // =========================================
 
         return Response.json({
             success: true,
 
-            users: usersWithStats,
+            users: customers,
 
             summary: {
-                totalUsers,
-                totalAdmins,
-                totalAccounts:
-                    users.length,
+                totalCustomers,
+                totalOrders,
+                totalSpent,
             },
         });
-
     } catch (error) {
         console.error(
-            "Admin get users error:",
+            "Admin users error:",
             error
         );
 
@@ -173,7 +178,7 @@ export async function GET() {
             {
                 success: false,
                 message:
-                    "Failed to get users.",
+                    "Failed to fetch customers.",
             },
             { status: 500 }
         );
