@@ -11,8 +11,9 @@ export default function ProductDetailsPage({ params }) {
     const { fetchCart } = useCart();
     const [quantity, setQuantity] = useState(1);
     const [product, setProduct] = useState(null);
-    const [loading, setLoading] = useState(true);
+const [loading, setLoading] = useState(true);
 
+const [selectedImage, setSelectedImage] = useState("");
     const [addingToCart, setAddingToCart] = useState(false);
     const [cartMessage, setCartMessage] = useState("");
 
@@ -40,7 +41,11 @@ export default function ProductDetailsPage({ params }) {
 
                 if (data.success) {
                     setProduct(data.product);
-                }
+
+                setSelectedImage(
+                    data.product.image
+                );
+}
             } catch (error) {
                 console.error(
                     "Failed to fetch product:",
@@ -405,20 +410,48 @@ async function handleSubmitReview(event) {
             <section className="product-details">
 
                 {/* Product Image */}
-                <div className="product-details-image">
+                {/* Product Images */}
 
-                    <div className="details-image-placeholder">
+<div className="product-details-image">
+    <div className="details-image-main">
+        <Image
+            src={selectedImage || product.image}
+            alt={product.name}
+            fill
+            className="details-product-image"
+            sizes="(max-width: 900px) 100vw, 50vw"
+        />
+    </div>
 
-                        <Image
-                            src={product.image}
-                            alt={product.name}
-                            fill
-                            className="details-product-image"
-                        />
-
-                    </div>
-
-                </div>
+    <div className="details-image-thumbnails">
+        {[
+            product.image,
+            ...(product.images || []),
+        ]
+            .filter(Boolean)
+            .map((image, index) => (
+                <button
+                    key={`${image}-${index}`}
+                    type="button"
+                    className={`details-image-thumbnail ${
+                        selectedImage === image
+                            ? "active"
+                            : ""
+                    }`}
+                    onClick={() =>
+                        setSelectedImage(image)
+                    }
+                >
+                    <Image
+                        src={image}
+                        alt={`${product.name} image ${index + 1}`}
+                        fill
+                        sizes="90px"
+                    />
+                </button>
+            ))}
+    </div>
+</div>
 
                 {/* Product Information */}
                 <div className="product-details-info">

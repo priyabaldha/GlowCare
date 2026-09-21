@@ -19,6 +19,11 @@ export default function AdminPage() {
 
     const [imagePreview, setImagePreview] =
         useState("");
+    const [additionalImagePreviews, setAdditionalImagePreviews] =
+        useState([]);
+
+    const [uploadingAdditionalImages, setUploadingAdditionalImages] =
+        useState(false);
 
     const [activeSection, setActiveSection] =
         useState("overview");
@@ -30,14 +35,14 @@ export default function AdminPage() {
     const [userSearch, setUserSearch] = useState("");
     const [selectedUser, setSelectedUser] = useState(null);
     const [reviews, setReviews] = useState([]);
-const [reviewsLoading, setReviewsLoading] = useState(false);
-const [reviewSearch, setReviewSearch] = useState("");
-const [reviewSummary, setReviewSummary] = useState({
-    totalReviews: 0,
-    averageRating: 0,
-    fiveStarReviews: 0,
-});
-const [deletingReview, setDeletingReview] = useState(null);
+    const [reviewsLoading, setReviewsLoading] = useState(false);
+    const [reviewSearch, setReviewSearch] = useState("");
+    const [reviewSummary, setReviewSummary] = useState({
+        totalReviews: 0,
+        averageRating: 0,
+        fiveStarReviews: 0,
+    });
+    const [deletingReview, setDeletingReview] = useState(null);
 
     const [ordersLoading, setOrdersLoading] =
         useState(false);
@@ -62,6 +67,7 @@ const [deletingReview, setDeletingReview] = useState(null);
         price: "",
         rating: "",
         image: "",
+        images: [],
         description: "",
         stock: "",
     });
@@ -175,106 +181,106 @@ const [deletingReview, setDeletingReview] = useState(null);
     }
 
     // =========================================
-// FETCH ADMIN REVIEWS
-// =========================================
+    // FETCH ADMIN REVIEWS
+    // =========================================
 
-async function fetchReviews() {
-    setReviewsLoading(true);
+    async function fetchReviews() {
+        setReviewsLoading(true);
 
-    try {
-        const response = await fetch(
-            "/api/admin/reviews"
-        );
-
-        const data = await response.json();
-
-        if (!response.ok) {
-            console.error(
-                data.message
+        try {
+            const response = await fetch(
+                "/api/admin/reviews"
             );
 
+            const data = await response.json();
+
+            if (!response.ok) {
+                console.error(
+                    data.message
+                );
+
+                return;
+            }
+
+            if (data.success) {
+                setReviews(data.reviews || []);
+
+                setReviewSummary(
+                    data.summary || {
+                        totalReviews: 0,
+                        averageRating: 0,
+                        fiveStarReviews: 0,
+                    }
+                );
+            }
+        } catch (error) {
+            console.error(
+                "Failed to fetch admin reviews:",
+                error
+            );
+        } finally {
+            setReviewsLoading(false);
+        }
+    }
+
+    // =========================================
+    // DELETE REVIEW
+    // =========================================
+
+    async function deleteReview(reviewId) {
+        const confirmed = window.confirm(
+            "Are you sure you want to delete this review?"
+        );
+
+        if (!confirmed) {
             return;
         }
 
-        if (data.success) {
-            setReviews(data.reviews || []);
+        setDeletingReview(reviewId);
 
-            setReviewSummary(
-                data.summary || {
-                    totalReviews: 0,
-                    averageRating: 0,
-                    fiveStarReviews: 0,
+        try {
+            const response = await fetch(
+                "/api/admin/reviews",
+                {
+                    method: "DELETE",
+                    headers: {
+                        "Content-Type":
+                            "application/json",
+                    },
+                    body: JSON.stringify({
+                        reviewId,
+                    }),
                 }
             );
-        }
-    } catch (error) {
-        console.error(
-            "Failed to fetch admin reviews:",
-            error
-        );
-    } finally {
-        setReviewsLoading(false);
-    }
-}
 
-// =========================================
-// DELETE REVIEW
-// =========================================
+            const data =
+                await response.json();
 
-async function deleteReview(reviewId) {
-    const confirmed = window.confirm(
-        "Are you sure you want to delete this review?"
-    );
-
-    if (!confirmed) {
-        return;
-    }
-
-    setDeletingReview(reviewId);
-
-    try {
-        const response = await fetch(
-            "/api/admin/reviews",
-            {
-                method: "DELETE",
-                headers: {
-                    "Content-Type":
-                        "application/json",
-                },
-                body: JSON.stringify({
-                    reviewId,
-                }),
-            }
-        );
-
-        const data =
-            await response.json();
-
-        if (!response.ok) {
-            alert(
-                data.message ||
+            if (!response.ok) {
+                alert(
+                    data.message ||
                     "Failed to delete review."
+                );
+
+                return;
+            }
+
+            if (data.success) {
+                await fetchReviews();
+            }
+        } catch (error) {
+            console.error(
+                "Delete review error:",
+                error
             );
 
-            return;
+            alert(
+                "Something went wrong while deleting the review."
+            );
+        } finally {
+            setDeletingReview(null);
         }
-
-        if (data.success) {
-            await fetchReviews();
-        }
-    } catch (error) {
-        console.error(
-            "Delete review error:",
-            error
-        );
-
-        alert(
-            "Something went wrong while deleting the review."
-        );
-    } finally {
-        setDeletingReview(null);
     }
-}
     // =========================================
     // UPDATE ORDER STATUS
     // =========================================
@@ -732,6 +738,116 @@ async function deleteReview(reviewId) {
     }
 
     // =========================================
+    // ADDITIONAL IMAGE UPLOAD
+    // =========================================
+
+    async function handleAdditionalImagesChange(event) {
+        const files = Array.from(
+            event.target.files || []
+        );
+
+        if (files.length === 0) {
+            return;
+        }
+
+        if (files.length > 3) {
+            alert(
+                "You can upload maximum 3 additional images."
+            );
+
+            event.target.value = "";
+            return;
+        }
+
+        for (const file of files) {
+            if (!file.type.startsWith("image/")) {
+                alert(
+                    "Please select only image files."
+                );
+
+                event.target.value = "";
+                return;
+            }
+
+            if (file.size > 5 * 1024 * 1024) {
+                alert(
+                    "Each image must be smaller than 5MB."
+                );
+
+                event.target.value = "";
+                return;
+            }
+        }
+
+        setUploadingAdditionalImages(true);
+
+        try {
+            const uploadedImages = [];
+
+            for (const file of files) {
+                const uploadData = new FormData();
+
+                uploadData.append(
+                    "file",
+                    file
+                );
+
+                const response = await fetch(
+                    "/api/upload",
+                    {
+                        method: "POST",
+                        body: uploadData,
+                    }
+                );
+
+                const data =
+                    await response.json();
+
+                if (!response.ok || !data.success) {
+                    throw new Error(
+                        data.message ||
+                        "Image upload failed."
+                    );
+                }
+
+                uploadedImages.push(
+                    data.imageUrl
+                );
+            }
+
+            setFormData((current) => ({
+                ...current,
+                images: uploadedImages,
+            }));
+
+            setAdditionalImagePreviews(
+                uploadedImages
+            );
+
+        } catch (error) {
+            console.error(
+                "Additional image upload error:",
+                error
+            );
+
+            alert(
+                error.message ||
+                "Additional image upload failed."
+            );
+
+            setFormData((current) => ({
+                ...current,
+                images: [],
+            }));
+
+            setAdditionalImagePreviews([]);
+
+        } finally {
+            setUploadingAdditionalImages(false);
+        }
+    }
+
+    // =========================================
     // OPEN ADD FORM
     // =========================================
 
@@ -745,11 +861,14 @@ async function deleteReview(reviewId) {
             price: "",
             rating: "",
             image: "",
+            images: [],
             description: "",
             stock: "",
         });
 
         setImagePreview("");
+
+        setAdditionalImagePreviews([]);
 
         setShowForm(true);
     }
@@ -776,15 +895,21 @@ async function deleteReview(reviewId) {
                 product.rating ?? "",
             image:
                 product.image || "",
+            images:
+                product.images || [],
+
             description:
-                product.description ||
-                "",
+                product.description || "",
             stock:
                 product.stock ?? "",
         });
 
         setImagePreview(
             product.image || ""
+        );
+
+        setAdditionalImagePreviews(
+            product.images || []
         );
 
         setShowForm(true);
@@ -813,11 +938,14 @@ async function deleteReview(reviewId) {
             price: "",
             rating: "",
             image: "",
+            images: [],
             description: "",
             stock: "",
         });
 
         setImagePreview("");
+
+        setAdditionalImagePreviews([]);
 
         setShowForm(false);
     }
@@ -1145,45 +1273,45 @@ async function deleteReview(reviewId) {
                 );
             }
         );
-        const filteredReviews =
-    reviews.filter((review) => {
-        const search =
-            reviewSearch
-                .toLowerCase()
-                .trim();
+    const filteredReviews =
+        reviews.filter((review) => {
+            const search =
+                reviewSearch
+                    .toLowerCase()
+                    .trim();
 
-        if (!search) {
-            return true;
-        }
+            if (!search) {
+                return true;
+            }
 
-        const customerName =
-            review.user?.name
-                ?.toLowerCase() || "";
+            const customerName =
+                review.user?.name
+                    ?.toLowerCase() || "";
 
-        const customerEmail =
-            review.user?.email
-                ?.toLowerCase() || "";
+            const customerEmail =
+                review.user?.email
+                    ?.toLowerCase() || "";
 
-        const productName =
-            review.product?.name
-                ?.toLowerCase() || "";
+            const productName =
+                review.product?.name
+                    ?.toLowerCase() || "";
 
-        const reviewText =
-            review.comment
-                ?.toLowerCase() ||
-            review.review
-                ?.toLowerCase() ||
-            review.text
-                ?.toLowerCase() ||
-            "";
+            const reviewText =
+                review.comment
+                    ?.toLowerCase() ||
+                review.review
+                    ?.toLowerCase() ||
+                review.text
+                    ?.toLowerCase() ||
+                "";
 
-        return (
-            customerName.includes(search) ||
-            customerEmail.includes(search) ||
-            productName.includes(search) ||
-            reviewText.includes(search)
-        );
-    });
+            return (
+                customerName.includes(search) ||
+                customerEmail.includes(search) ||
+                productName.includes(search) ||
+                reviewText.includes(search)
+            );
+        });
 
     const totalCustomers =
         customerUsers.length;
@@ -1407,10 +1535,10 @@ async function deleteReview(reviewId) {
                         />
 
                         <SidebarItem
-    number="05"
-    label="Reviews"
-    section="reviews"
-/>
+                            number="05"
+                            label="Reviews"
+                            section="reviews"
+                        />
 
                     </nav>
 
@@ -4949,385 +5077,385 @@ async function deleteReview(reviewId) {
                             </section>
                             {/* CUSTOMER DETAILS PANEL */}
 
-{selectedUser && (
-    <div
-        style={{
-            position: "fixed",
-            inset: 0,
-            zIndex: 1000,
-            background: "rgba(63, 39, 36, 0.35)",
-            display: "flex",
-            justifyContent: "flex-end",
-        }}
-        onClick={() => setSelectedUser(null)}
-    >
-        <div
-            onClick={(event) =>
-                event.stopPropagation()
-            }
-            style={{
-                width: "min(440px, 100%)",
-                height: "100%",
-                overflowY: "auto",
-                background: "var(--milk)",
-                padding: "35px 30px",
-                boxSizing: "border-box",
-                boxShadow:
-                    "-10px 0 40px rgba(63, 39, 36, 0.12)",
-            }}
-        >
-
-            {/* PANEL HEADER */}
-
-            <div
-                style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "flex-start",
-                    marginBottom: "30px",
-                }}
-            >
-                <div>
-                    <p className="section-eyebrow">
-                        CUSTOMER PROFILE
-                    </p>
-
-                    <h2
-                        style={{
-                            margin: "8px 0 0",
-                            color:
-                                "var(--espresso-brown)",
-                            fontFamily:
-                                "Georgia, serif",
-                            fontWeight: "400",
-                        }}
-                    >
-                        {selectedUser.name}
-                    </h2>
-                </div>
-
-                <button
-                    type="button"
-                    onClick={() =>
-                        setSelectedUser(null)
-                    }
-                    style={{
-                        width: "34px",
-                        height: "34px",
-                        border: "1px solid var(--light-border)",
-                        borderRadius: "50%",
-                        background:
-                            "var(--warm-white)",
-                        color:
-                            "var(--espresso-brown)",
-                        fontSize: "18px",
-                        cursor: "pointer",
-                    }}
-                >
-                    ×
-                </button>
-            </div>
-
-            {/* CUSTOMER INFO */}
-
-            <div
-                style={{
-                    padding: "22px",
-                    border:
-                        "1px solid var(--light-border)",
-                    borderRadius: "16px",
-                    background:
-                        "var(--warm-white)",
-                    marginBottom: "20px",
-                }}
-            >
-                <div
-                    style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "15px",
-                    }}
-                >
-                    <div
-                        style={{
-                            width: "58px",
-                            height: "58px",
-                            borderRadius: "50%",
-                            background:
-                                "var(--blush-oat)",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent:
-                                "center",
-                            color:
-                                "var(--cocoa-taupe)",
-                            fontFamily:
-                                "Georgia, serif",
-                            fontSize: "22px",
-                        }}
-                    >
-                        {selectedUser.name
-                            ?.trim()
-                            .charAt(0)
-                            .toUpperCase()}
-                    </div>
-
-                    <div>
-                        <strong
-                            style={{
-                                display: "block",
-                                color:
-                                    "var(--espresso-brown)",
-                                fontFamily:
-                                    "Georgia, serif",
-                                fontSize: "17px",
-                                fontWeight: "400",
-                            }}
-                        >
-                            {selectedUser.name}
-                        </strong>
-
-                        <span
-                            style={{
-                                display: "block",
-                                marginTop: "5px",
-                                color:
-                                    "var(--muted-text)",
-                                fontSize: "11px",
-                            }}
-                        >
-                            {selectedUser.email}
-                        </span>
-                    </div>
-                </div>
-
-                <div
-                    style={{
-                        marginTop: "20px",
-                        paddingTop: "16px",
-                        borderTop:
-                            "1px solid var(--light-border)",
-                        color:
-                            "var(--muted-text)",
-                        fontSize: "11px",
-                    }}
-                >
-                    Joined{" "}
-                    {selectedUser.createdAt
-                        ? new Date(
-                              selectedUser.createdAt
-                          ).toLocaleDateString(
-                              "en-IN",
-                              {
-                                  day: "2-digit",
-                                  month: "long",
-                                  year: "numeric",
-                              }
-                          )
-                        : "—"}
-                </div>
-            </div>
-
-            {/* CUSTOMER STATS */}
-
-            <div
-                style={{
-                    display: "grid",
-                    gridTemplateColumns:
-                        "1fr 1fr",
-                    gap: "12px",
-                    marginBottom: "30px",
-                }}
-            >
-                <div
-                    className="admin-stat-card"
-                >
-                    <span>Orders</span>
-
-                    <strong>
-                        {selectedUser.orderCount ||
-                            0}
-                    </strong>
-                </div>
-
-                <div
-                    className="admin-stat-card"
-                >
-                    <span>Total Spent</span>
-
-                    <strong
-                        style={{
-                            fontSize: "20px",
-                        }}
-                    >
-                        ₹
-                        {Number(
-                            selectedUser.totalSpent ||
-                                0
-                        ).toLocaleString("en-IN")}
-                    </strong>
-                </div>
-            </div>
-
-            {/* ORDER HISTORY */}
-
-            <div>
-                <p className="section-eyebrow">
-                    PURCHASE ACTIVITY
-                </p>
-
-                <h3
-                    style={{
-                        margin:
-                            "8px 0 18px",
-                        color:
-                            "var(--espresso-brown)",
-                        fontFamily:
-                            "Georgia, serif",
-                        fontWeight: "400",
-                        fontSize: "20px",
-                    }}
-                >
-                    Order history
-                </h3>
-
-                {orders.filter(
-                    (order) =>
-                        order.user?._id ===
-                        selectedUser._id
-                ).length === 0 ? (
-                    <div
-                        style={{
-                            padding: "25px",
-                            border:
-                                "1px solid var(--light-border)",
-                            borderRadius: "14px",
-                            background:
-                                "var(--warm-white)",
-                            color:
-                                "var(--muted-text)",
-                            fontSize: "12px",
-                            textAlign: "center",
-                        }}
-                    >
-                        No orders placed yet.
-                    </div>
-                ) : (
-                    orders
-                        .filter(
-                            (order) =>
-                                order.user?._id ===
-                                selectedUser._id
-                        )
-                        .map((order) => (
-                            <div
-                                key={order._id}
-                                style={{
-                                    padding: "16px",
-                                    marginBottom:
-                                        "10px",
-                                    border:
-                                        "1px solid var(--light-border)",
-                                    borderRadius:
-                                        "14px",
-                                    background:
-                                        "var(--warm-white)",
-                                }}
-                            >
+                            {selectedUser && (
                                 <div
                                     style={{
-                                        display:
-                                            "flex",
-                                        justifyContent:
-                                            "space-between",
-                                        gap: "12px",
+                                        position: "fixed",
+                                        inset: 0,
+                                        zIndex: 1000,
+                                        background: "rgba(63, 39, 36, 0.35)",
+                                        display: "flex",
+                                        justifyContent: "flex-end",
                                     }}
+                                    onClick={() => setSelectedUser(null)}
                                 >
-                                    <div>
-                                        <strong
-                                            style={{
-                                                color:
-                                                    "var(--espresso-brown)",
-                                                fontSize:
-                                                    "12px",
-                                            }}
-                                        >
-                                            #
-                                            {order._id
-                                                ?.slice(
-                                                    -6
-                                                )
-                                                .toUpperCase()}
-                                        </strong>
-
-                                        <span
-                                            style={{
-                                                display:
-                                                    "block",
-                                                marginTop:
-                                                    "5px",
-                                                color:
-                                                    "var(--muted-text)",
-                                                fontSize:
-                                                    "10px",
-                                            }}
-                                        >
-                                            {order.createdAt
-                                                ? new Date(
-                                                      order.createdAt
-                                                  ).toLocaleDateString(
-                                                      "en-IN"
-                                                  )
-                                                : "—"}
-                                        </span>
-                                    </div>
-
-                                    <strong
+                                    <div
+                                        onClick={(event) =>
+                                            event.stopPropagation()
+                                        }
                                         style={{
-                                            color:
-                                                "var(--espresso-brown)",
-                                            fontSize:
-                                                "12px",
+                                            width: "min(440px, 100%)",
+                                            height: "100%",
+                                            overflowY: "auto",
+                                            background: "var(--milk)",
+                                            padding: "35px 30px",
+                                            boxSizing: "border-box",
+                                            boxShadow:
+                                                "-10px 0 40px rgba(63, 39, 36, 0.12)",
                                         }}
                                     >
-                                        ₹
-                                        {Number(
-                                            order.totalAmount ||
-                                                0
-                                        ).toLocaleString(
-                                            "en-IN"
-                                        )}
-                                    </strong>
-                                </div>
 
-                                <div
-                                    style={{
-                                        marginTop:
-                                            "12px",
-                                        paddingTop:
-                                            "10px",
-                                        borderTop:
-                                            "1px solid var(--light-border)",
-                                        color:
-                                            "var(--muted-text)",
-                                        fontSize:
-                                            "10px",
-                                        textTransform:
-                                            "capitalize",
-                                    }}
-                                >
-                                    Status:{" "}
-                                    {order.status ||
-                                        "pending"}
-                                </div>
-                            </div>
-                        ))
-                )}
-            </div>
+                                        {/* PANEL HEADER */}
 
-        </div>
-    </div>
-)}
+                                        <div
+                                            style={{
+                                                display: "flex",
+                                                justifyContent: "space-between",
+                                                alignItems: "flex-start",
+                                                marginBottom: "30px",
+                                            }}
+                                        >
+                                            <div>
+                                                <p className="section-eyebrow">
+                                                    CUSTOMER PROFILE
+                                                </p>
+
+                                                <h2
+                                                    style={{
+                                                        margin: "8px 0 0",
+                                                        color:
+                                                            "var(--espresso-brown)",
+                                                        fontFamily:
+                                                            "Georgia, serif",
+                                                        fontWeight: "400",
+                                                    }}
+                                                >
+                                                    {selectedUser.name}
+                                                </h2>
+                                            </div>
+
+                                            <button
+                                                type="button"
+                                                onClick={() =>
+                                                    setSelectedUser(null)
+                                                }
+                                                style={{
+                                                    width: "34px",
+                                                    height: "34px",
+                                                    border: "1px solid var(--light-border)",
+                                                    borderRadius: "50%",
+                                                    background:
+                                                        "var(--warm-white)",
+                                                    color:
+                                                        "var(--espresso-brown)",
+                                                    fontSize: "18px",
+                                                    cursor: "pointer",
+                                                }}
+                                            >
+                                                ×
+                                            </button>
+                                        </div>
+
+                                        {/* CUSTOMER INFO */}
+
+                                        <div
+                                            style={{
+                                                padding: "22px",
+                                                border:
+                                                    "1px solid var(--light-border)",
+                                                borderRadius: "16px",
+                                                background:
+                                                    "var(--warm-white)",
+                                                marginBottom: "20px",
+                                            }}
+                                        >
+                                            <div
+                                                style={{
+                                                    display: "flex",
+                                                    alignItems: "center",
+                                                    gap: "15px",
+                                                }}
+                                            >
+                                                <div
+                                                    style={{
+                                                        width: "58px",
+                                                        height: "58px",
+                                                        borderRadius: "50%",
+                                                        background:
+                                                            "var(--blush-oat)",
+                                                        display: "flex",
+                                                        alignItems: "center",
+                                                        justifyContent:
+                                                            "center",
+                                                        color:
+                                                            "var(--cocoa-taupe)",
+                                                        fontFamily:
+                                                            "Georgia, serif",
+                                                        fontSize: "22px",
+                                                    }}
+                                                >
+                                                    {selectedUser.name
+                                                        ?.trim()
+                                                        .charAt(0)
+                                                        .toUpperCase()}
+                                                </div>
+
+                                                <div>
+                                                    <strong
+                                                        style={{
+                                                            display: "block",
+                                                            color:
+                                                                "var(--espresso-brown)",
+                                                            fontFamily:
+                                                                "Georgia, serif",
+                                                            fontSize: "17px",
+                                                            fontWeight: "400",
+                                                        }}
+                                                    >
+                                                        {selectedUser.name}
+                                                    </strong>
+
+                                                    <span
+                                                        style={{
+                                                            display: "block",
+                                                            marginTop: "5px",
+                                                            color:
+                                                                "var(--muted-text)",
+                                                            fontSize: "11px",
+                                                        }}
+                                                    >
+                                                        {selectedUser.email}
+                                                    </span>
+                                                </div>
+                                            </div>
+
+                                            <div
+                                                style={{
+                                                    marginTop: "20px",
+                                                    paddingTop: "16px",
+                                                    borderTop:
+                                                        "1px solid var(--light-border)",
+                                                    color:
+                                                        "var(--muted-text)",
+                                                    fontSize: "11px",
+                                                }}
+                                            >
+                                                Joined{" "}
+                                                {selectedUser.createdAt
+                                                    ? new Date(
+                                                        selectedUser.createdAt
+                                                    ).toLocaleDateString(
+                                                        "en-IN",
+                                                        {
+                                                            day: "2-digit",
+                                                            month: "long",
+                                                            year: "numeric",
+                                                        }
+                                                    )
+                                                    : "—"}
+                                            </div>
+                                        </div>
+
+                                        {/* CUSTOMER STATS */}
+
+                                        <div
+                                            style={{
+                                                display: "grid",
+                                                gridTemplateColumns:
+                                                    "1fr 1fr",
+                                                gap: "12px",
+                                                marginBottom: "30px",
+                                            }}
+                                        >
+                                            <div
+                                                className="admin-stat-card"
+                                            >
+                                                <span>Orders</span>
+
+                                                <strong>
+                                                    {selectedUser.orderCount ||
+                                                        0}
+                                                </strong>
+                                            </div>
+
+                                            <div
+                                                className="admin-stat-card"
+                                            >
+                                                <span>Total Spent</span>
+
+                                                <strong
+                                                    style={{
+                                                        fontSize: "20px",
+                                                    }}
+                                                >
+                                                    ₹
+                                                    {Number(
+                                                        selectedUser.totalSpent ||
+                                                        0
+                                                    ).toLocaleString("en-IN")}
+                                                </strong>
+                                            </div>
+                                        </div>
+
+                                        {/* ORDER HISTORY */}
+
+                                        <div>
+                                            <p className="section-eyebrow">
+                                                PURCHASE ACTIVITY
+                                            </p>
+
+                                            <h3
+                                                style={{
+                                                    margin:
+                                                        "8px 0 18px",
+                                                    color:
+                                                        "var(--espresso-brown)",
+                                                    fontFamily:
+                                                        "Georgia, serif",
+                                                    fontWeight: "400",
+                                                    fontSize: "20px",
+                                                }}
+                                            >
+                                                Order history
+                                            </h3>
+
+                                            {orders.filter(
+                                                (order) =>
+                                                    order.user?._id ===
+                                                    selectedUser._id
+                                            ).length === 0 ? (
+                                                <div
+                                                    style={{
+                                                        padding: "25px",
+                                                        border:
+                                                            "1px solid var(--light-border)",
+                                                        borderRadius: "14px",
+                                                        background:
+                                                            "var(--warm-white)",
+                                                        color:
+                                                            "var(--muted-text)",
+                                                        fontSize: "12px",
+                                                        textAlign: "center",
+                                                    }}
+                                                >
+                                                    No orders placed yet.
+                                                </div>
+                                            ) : (
+                                                orders
+                                                    .filter(
+                                                        (order) =>
+                                                            order.user?._id ===
+                                                            selectedUser._id
+                                                    )
+                                                    .map((order) => (
+                                                        <div
+                                                            key={order._id}
+                                                            style={{
+                                                                padding: "16px",
+                                                                marginBottom:
+                                                                    "10px",
+                                                                border:
+                                                                    "1px solid var(--light-border)",
+                                                                borderRadius:
+                                                                    "14px",
+                                                                background:
+                                                                    "var(--warm-white)",
+                                                            }}
+                                                        >
+                                                            <div
+                                                                style={{
+                                                                    display:
+                                                                        "flex",
+                                                                    justifyContent:
+                                                                        "space-between",
+                                                                    gap: "12px",
+                                                                }}
+                                                            >
+                                                                <div>
+                                                                    <strong
+                                                                        style={{
+                                                                            color:
+                                                                                "var(--espresso-brown)",
+                                                                            fontSize:
+                                                                                "12px",
+                                                                        }}
+                                                                    >
+                                                                        #
+                                                                        {order._id
+                                                                            ?.slice(
+                                                                                -6
+                                                                            )
+                                                                            .toUpperCase()}
+                                                                    </strong>
+
+                                                                    <span
+                                                                        style={{
+                                                                            display:
+                                                                                "block",
+                                                                            marginTop:
+                                                                                "5px",
+                                                                            color:
+                                                                                "var(--muted-text)",
+                                                                            fontSize:
+                                                                                "10px",
+                                                                        }}
+                                                                    >
+                                                                        {order.createdAt
+                                                                            ? new Date(
+                                                                                order.createdAt
+                                                                            ).toLocaleDateString(
+                                                                                "en-IN"
+                                                                            )
+                                                                            : "—"}
+                                                                    </span>
+                                                                </div>
+
+                                                                <strong
+                                                                    style={{
+                                                                        color:
+                                                                            "var(--espresso-brown)",
+                                                                        fontSize:
+                                                                            "12px",
+                                                                    }}
+                                                                >
+                                                                    ₹
+                                                                    {Number(
+                                                                        order.totalAmount ||
+                                                                        0
+                                                                    ).toLocaleString(
+                                                                        "en-IN"
+                                                                    )}
+                                                                </strong>
+                                                            </div>
+
+                                                            <div
+                                                                style={{
+                                                                    marginTop:
+                                                                        "12px",
+                                                                    paddingTop:
+                                                                        "10px",
+                                                                    borderTop:
+                                                                        "1px solid var(--light-border)",
+                                                                    color:
+                                                                        "var(--muted-text)",
+                                                                    fontSize:
+                                                                        "10px",
+                                                                    textTransform:
+                                                                        "capitalize",
+                                                                }}
+                                                            >
+                                                                Status:{" "}
+                                                                {order.status ||
+                                                                    "pending"}
+                                                            </div>
+                                                        </div>
+                                                    ))
+                                            )}
+                                        </div>
+
+                                    </div>
+                                </div>
+                            )}
 
                         </div>
                     )}
@@ -5521,7 +5649,7 @@ async function deleteReview(reviewId) {
                                             </div>
 
 
-                                            <div className="admin-field">
+                                            {/* <div className="admin-field">
 
                                                 <label>
                                                     Rating
@@ -5543,7 +5671,7 @@ async function deleteReview(reviewId) {
                                                     required
                                                 />
 
-                                            </div>
+                                            </div> */}
 
 
                                             <div className="admin-field">
@@ -5627,6 +5755,57 @@ async function deleteReview(reviewId) {
 
                                             </div>
 
+
+                                            {/* Additional Product Images */}
+
+                                            <div className="admin-field admin-field-full">
+
+                                                <label>
+                                                    Additional Product Images
+                                                </label>
+
+                                                <input
+                                                    type="file"
+                                                    accept="image/*"
+                                                    multiple
+                                                    onChange={
+                                                        handleAdditionalImagesChange
+                                                    }
+                                                />
+
+                                                <p className="admin-image-help">
+                                                    Upload up to 3 additional images
+                                                    of this product.
+                                                </p>
+
+                                                {uploadingAdditionalImages && (
+                                                    <p className="image-upload-status">
+                                                        Uploading additional images...
+                                                    </p>
+                                                )}
+
+                                                {!uploadingAdditionalImages &&
+                                                    additionalImagePreviews.length > 0 && (
+                                                        <div className="admin-additional-images-preview">
+
+                                                            {additionalImagePreviews.map(
+                                                                (image, index) => (
+                                                                    <div
+                                                                        key={`${image}-${index}`}
+                                                                        className="admin-additional-image"
+                                                                    >
+                                                                        <img
+                                                                            src={image}
+                                                                            alt={`Additional product image ${index + 1}`}
+                                                                        />
+                                                                    </div>
+                                                                )
+                                                            )}
+
+                                                        </div>
+                                                    )}
+
+                                            </div>
 
                                             <div className="admin-field admin-field-full">
 
@@ -5899,622 +6078,622 @@ async function deleteReview(reviewId) {
                         </div>
                     )}
 
-                    {/* =================================
+                {/* =================================
     REVIEWS
 ================================= */}
 
-{activeSection ===
-    "reviews" && (
-    <div
-        style={{
-            padding:
-                "50px 5% 90px",
-        }}
-    >
-        {/* HEADER */}
+                {activeSection ===
+                    "reviews" && (
+                        <div
+                            style={{
+                                padding:
+                                    "50px 5% 90px",
+                            }}
+                        >
+                            {/* HEADER */}
 
-        <section className="admin-header">
-            <div>
-                <p className="section-eyebrow">
-                    GLOWCARE ADMIN
-                </p>
+                            <section className="admin-header">
+                                <div>
+                                    <p className="section-eyebrow">
+                                        GLOWCARE ADMIN
+                                    </p>
 
-                <h1>
-                    Customer
-                    <span>
-                        reviews.
-                    </span>
-                </h1>
+                                    <h1>
+                                        Customer
+                                        <span>
+                                            reviews.
+                                        </span>
+                                    </h1>
 
-                <p
-                    style={{
-                        marginTop:
-                            "16px",
-                        color:
-                            "var(--muted-text)",
-                        fontSize:
-                            "13px",
-                    }}
-                >
-                    Read customer feedback
-                    and keep track of your
-                    store's reputation.
-                </p>
-            </div>
-        </section>
-
-
-        {/* REVIEW STATS */}
-
-        <section
-            style={{
-                display:
-                    "grid",
-                gridTemplateColumns:
-                    "repeat(3, minmax(0, 1fr))",
-                gap: "14px",
-                marginTop:
-                    "40px",
-                marginBottom:
-                    "30px",
-            }}
-        >
-
-            {/* TOTAL */}
-
-            <div
-                className="admin-stat-card"
-            >
-                <span>
-                    Total Reviews
-                </span>
-
-                <strong>
-                    {
-                        reviewSummary.totalReviews
-                    }
-                </strong>
-
-                <p
-                    style={{
-                        marginTop:
-                            "10px",
-                        color:
-                            "var(--muted-text)",
-                        fontSize:
-                            "10px",
-                    }}
-                >
-                    Customer feedback
-                </p>
-            </div>
-
-
-            {/* AVERAGE */}
-
-            <div
-                className="admin-stat-card"
-            >
-                <span>
-                    Average Rating
-                </span>
-
-                <strong
-                    style={{
-                        display:
-                            "flex",
-                        alignItems:
-                            "center",
-                        gap: "8px",
-                    }}
-                >
-                    <span
-                        style={{
-                            color:
-                                "var(--dusty-rose)",
-                            fontSize:
-                                "24px",
-                        }}
-                    >
-                        ★
-                    </span>
-
-                    {
-                        Number(
-                            reviewSummary.averageRating ||
-                                0
-                        ).toFixed(1)
-                    }
-                </strong>
-
-                <p
-                    style={{
-                        marginTop:
-                            "10px",
-                        color:
-                            "var(--muted-text)",
-                        fontSize:
-                            "10px",
-                    }}
-                >
-                    Across all reviews
-                </p>
-            </div>
-
-
-            {/* FIVE STAR */}
-
-            <div
-                className="admin-stat-card"
-            >
-                <span>
-                    5-Star Reviews
-                </span>
-
-                <strong>
-                    {
-                        reviewSummary.fiveStarReviews
-                    }
-                </strong>
-
-                <p
-                    style={{
-                        marginTop:
-                            "10px",
-                        color:
-                            "var(--muted-text)",
-                        fontSize:
-                            "10px",
-                    }}
-                >
-                    Highest rated feedback
-                </p>
-            </div>
-
-        </section>
-
-
-        {/* REVIEWS CARD */}
-
-        <section
-            className="admin-products"
-        >
-
-            {/* HEADER */}
-
-            <div
-                className="admin-section-heading"
-                style={{
-                    alignItems:
-                        "center",
-                }}
-            >
-                <div>
-                    <p className="section-eyebrow">
-                        CUSTOMER FEEDBACK
-                    </p>
-
-                    <h2>
-                        All reviews
-                    </h2>
-                </div>
-
-                <span>
-                    {
-                        filteredReviews.length
-                    }{" "}
-                    reviews
-                </span>
-            </div>
-
-
-            {/* SEARCH */}
-
-            <div
-                style={{
-                    marginTop:
-                        "20px",
-                    marginBottom:
-                        "25px",
-                }}
-            >
-                <input
-                    type="text"
-                    value={
-                        reviewSearch
-                    }
-                    onChange={(
-                        event
-                    ) =>
-                        setReviewSearch(
-                            event.target
-                                .value
-                        )
-                    }
-                    placeholder="Search by customer, email, product..."
-                    style={{
-                        width:
-                            "100%",
-                        padding:
-                            "14px 16px",
-                        border:
-                            "1px solid var(--light-border)",
-                        borderRadius:
-                            "10px",
-                        background:
-                            "var(--warm-white)",
-                        color:
-                            "var(--espresso-brown)",
-                        fontFamily:
-                            "inherit",
-                        fontSize:
-                            "12px",
-                        outline:
-                            "none",
-                        boxSizing:
-                            "border-box",
-                    }}
-                />
-            </div>
-
-
-            {/* LOADING */}
-
-            {reviewsLoading ? (
-                <div
-                    style={{
-                        padding:
-                            "60px 20px",
-                        textAlign:
-                            "center",
-                        color:
-                            "var(--muted-text)",
-                        fontSize:
-                            "13px",
-                    }}
-                >
-                    Loading reviews...
-                </div>
-            ) : filteredReviews.length ===
-              0 ? (
-                <div
-                    style={{
-                        padding:
-                            "60px 20px",
-                        textAlign:
-                            "center",
-                        color:
-                            "var(--muted-text)",
-                        fontSize:
-                            "13px",
-                    }}
-                >
-                    {reviews.length ===
-                    0
-                        ? "No customer reviews yet."
-                        : "No reviews match your search."}
-                </div>
-            ) : (
-                <div
-                    style={{
-                        display:
-                            "flex",
-                        flexDirection:
-                            "column",
-                        gap: "12px",
-                    }}
-                >
-
-                    {filteredReviews.map(
-                        (review) => {
-
-                            const customerName =
-                                review
-                                    .user
-                                    ?.name ||
-                                "Customer";
-
-                            const productName =
-                                review
-                                    .product
-                                    ?.name ||
-                                "Product";
-
-                            const initials =
-                                customerName
-                                    .trim()
-                                    .charAt(
-                                        0
-                                    )
-                                    .toUpperCase() ||
-                                "U";
-
-                            const reviewText =
-                                review.comment ||
-                                review.review ||
-                                review.text ||
-                                review.content ||
-                                "No review text.";
-
-                            return (
-                                <div
-                                    key={
-                                        review._id
-                                    }
-                                    style={{
-                                        display:
-                                            "grid",
-                                        gridTemplateColumns:
-                                            "48px minmax(180px, 1fr) minmax(180px, 1.2fr) auto",
-                                        gap:
-                                            "18px",
-                                        alignItems:
-                                            "center",
-                                        padding:
-                                            "18px",
-                                        border:
-                                            "1px solid var(--light-border)",
-                                        borderRadius:
-                                            "14px",
-                                        background:
-                                            "var(--milk)",
-                                    }}
-                                >
-
-                                    {/* CUSTOMER AVATAR */}
-
-                                    <div
+                                    <p
                                         style={{
-                                            width:
-                                                "44px",
-                                            height:
-                                                "44px",
-                                            borderRadius:
-                                                "50%",
-                                            background:
-                                                "var(--blush-oat)",
+                                            marginTop:
+                                                "16px",
+                                            color:
+                                                "var(--muted-text)",
+                                            fontSize:
+                                                "13px",
+                                        }}
+                                    >
+                                        Read customer feedback
+                                        and keep track of your
+                                        store's reputation.
+                                    </p>
+                                </div>
+                            </section>
+
+
+                            {/* REVIEW STATS */}
+
+                            <section
+                                style={{
+                                    display:
+                                        "grid",
+                                    gridTemplateColumns:
+                                        "repeat(3, minmax(0, 1fr))",
+                                    gap: "14px",
+                                    marginTop:
+                                        "40px",
+                                    marginBottom:
+                                        "30px",
+                                }}
+                            >
+
+                                {/* TOTAL */}
+
+                                <div
+                                    className="admin-stat-card"
+                                >
+                                    <span>
+                                        Total Reviews
+                                    </span>
+
+                                    <strong>
+                                        {
+                                            reviewSummary.totalReviews
+                                        }
+                                    </strong>
+
+                                    <p
+                                        style={{
+                                            marginTop:
+                                                "10px",
+                                            color:
+                                                "var(--muted-text)",
+                                            fontSize:
+                                                "10px",
+                                        }}
+                                    >
+                                        Customer feedback
+                                    </p>
+                                </div>
+
+
+                                {/* AVERAGE */}
+
+                                <div
+                                    className="admin-stat-card"
+                                >
+                                    <span>
+                                        Average Rating
+                                    </span>
+
+                                    <strong
+                                        style={{
                                             display:
                                                 "flex",
                                             alignItems:
                                                 "center",
-                                            justifyContent:
-                                                "center",
-                                            color:
-                                                "var(--cocoa-taupe)",
-                                            fontFamily:
-                                                "Georgia, serif",
-                                            fontSize:
-                                                "17px",
+                                            gap: "8px",
                                         }}
                                     >
+                                        <span
+                                            style={{
+                                                color:
+                                                    "var(--dusty-rose)",
+                                                fontSize:
+                                                    "24px",
+                                            }}
+                                        >
+                                            ★
+                                        </span>
+
                                         {
-                                            initials
+                                            Number(
+                                                reviewSummary.averageRating ||
+                                                0
+                                            ).toFixed(1)
                                         }
-                                    </div>
+                                    </strong>
+
+                                    <p
+                                        style={{
+                                            marginTop:
+                                                "10px",
+                                            color:
+                                                "var(--muted-text)",
+                                            fontSize:
+                                                "10px",
+                                        }}
+                                    >
+                                        Across all reviews
+                                    </p>
+                                </div>
 
 
-                                    {/* CUSTOMER */}
+                                {/* FIVE STAR */}
 
+                                <div
+                                    className="admin-stat-card"
+                                >
+                                    <span>
+                                        5-Star Reviews
+                                    </span>
+
+                                    <strong>
+                                        {
+                                            reviewSummary.fiveStarReviews
+                                        }
+                                    </strong>
+
+                                    <p
+                                        style={{
+                                            marginTop:
+                                                "10px",
+                                            color:
+                                                "var(--muted-text)",
+                                            fontSize:
+                                                "10px",
+                                        }}
+                                    >
+                                        Highest rated feedback
+                                    </p>
+                                </div>
+
+                            </section>
+
+
+                            {/* REVIEWS CARD */}
+
+                            <section
+                                className="admin-products"
+                            >
+
+                                {/* HEADER */}
+
+                                <div
+                                    className="admin-section-heading"
+                                    style={{
+                                        alignItems:
+                                            "center",
+                                    }}
+                                >
                                     <div>
-                                        <strong
-                                            style={{
-                                                display:
-                                                    "block",
-                                                color:
-                                                    "var(--espresso-brown)",
-                                                fontFamily:
-                                                    "Georgia, serif",
-                                                fontWeight:
-                                                    "400",
-                                                fontSize:
-                                                    "15px",
-                                            }}
-                                        >
-                                            {
-                                                customerName
-                                            }
-                                        </strong>
-
-                                        <span
-                                            style={{
-                                                display:
-                                                    "block",
-                                                marginTop:
-                                                    "5px",
-                                                color:
-                                                    "var(--muted-text)",
-                                                fontSize:
-                                                    "10px",
-                                            }}
-                                        >
-                                            {
-                                                review
-                                                    .user
-                                                    ?.email ||
-                                                "No email"
-                                            }
-                                        </span>
-
-                                        <span
-                                            style={{
-                                                display:
-                                                    "block",
-                                                marginTop:
-                                                    "8px",
-                                                color:
-                                                    "var(--muted-text)",
-                                                fontSize:
-                                                    "9px",
-                                            }}
-                                        >
-                                            {
-                                                review.createdAt
-                                                    ? new Date(
-                                                          review.createdAt
-                                                      ).toLocaleDateString(
-                                                          "en-IN",
-                                                          {
-                                                              day: "2-digit",
-                                                              month: "short",
-                                                              year: "numeric",
-                                                          }
-                                                      )
-                                                    : "—"
-                                            }
-                                        </span>
-                                    </div>
-
-
-                                    {/* REVIEW */}
-
-                                    <div>
-                                        <div
-                                            style={{
-                                                display:
-                                                    "flex",
-                                                alignItems:
-                                                    "center",
-                                                gap:
-                                                    "2px",
-                                                marginBottom:
-                                                    "8px",
-                                            }}
-                                        >
-                                            {[
-                                                1,
-                                                2,
-                                                3,
-                                                4,
-                                                5,
-                                            ].map(
-                                                (
-                                                    star
-                                                ) => (
-                                                    <span
-                                                        key={
-                                                            star
-                                                        }
-                                                        style={{
-                                                            color:
-                                                                star <=
-                                                                Number(
-                                                                    review.rating ||
-                                                                        0
-                                                                )
-                                                                    ? "var(--dusty-rose)"
-                                                                    : "var(--light-border)",
-                                                            fontSize:
-                                                                "14px",
-                                                        }}
-                                                    >
-                                                        ★
-                                                    </span>
-                                                )
-                                            )}
-                                        </div>
-
-                                        <strong
-                                            style={{
-                                                display:
-                                                    "block",
-                                                color:
-                                                    "var(--espresso-brown)",
-                                                fontSize:
-                                                    "11px",
-                                                marginBottom:
-                                                    "5px",
-                                            }}
-                                        >
-                                            {
-                                                productName
-                                            }
-                                        </strong>
-
-                                        <p
-                                            style={{
-                                                margin:
-                                                    "0",
-                                                color:
-                                                    "var(--muted-text)",
-                                                fontSize:
-                                                    "11px",
-                                                lineHeight:
-                                                    "1.6",
-                                                display:
-                                                    "-webkit-box",
-                                                WebkitLineClamp:
-                                                    3,
-                                                WebkitBoxOrient:
-                                                    "vertical",
-                                                overflow:
-                                                    "hidden",
-                                            }}
-                                        >
-                                            {
-                                                reviewText
-                                            }
+                                        <p className="section-eyebrow">
+                                            CUSTOMER FEEDBACK
                                         </p>
+
+                                        <h2>
+                                            All reviews
+                                        </h2>
                                     </div>
 
+                                    <span>
+                                        {
+                                            filteredReviews.length
+                                        }{" "}
+                                        reviews
+                                    </span>
+                                </div>
 
-                                    {/* DELETE */}
 
-                                    <button
-                                        type="button"
-                                        disabled={
-                                            deletingReview ===
-                                            review._id
+                                {/* SEARCH */}
+
+                                <div
+                                    style={{
+                                        marginTop:
+                                            "20px",
+                                        marginBottom:
+                                            "25px",
+                                    }}
+                                >
+                                    <input
+                                        type="text"
+                                        value={
+                                            reviewSearch
                                         }
-                                        onClick={() =>
-                                            deleteReview(
-                                                review._id
+                                        onChange={(
+                                            event
+                                        ) =>
+                                            setReviewSearch(
+                                                event.target
+                                                    .value
                                             )
                                         }
+                                        placeholder="Search by customer, email, product..."
                                         style={{
+                                            width:
+                                                "100%",
+                                            padding:
+                                                "14px 16px",
                                             border:
-                                                "1px solid #e3c9c4",
+                                                "1px solid var(--light-border)",
                                             borderRadius:
                                                 "10px",
-                                            padding:
-                                                "9px 13px",
                                             background:
                                                 "var(--warm-white)",
                                             color:
-                                                "var(--dusty-rose)",
+                                                "var(--espresso-brown)",
                                             fontFamily:
                                                 "inherit",
                                             fontSize:
-                                                "10px",
-                                            cursor:
-                                                deletingReview ===
-                                                review._id
-                                                    ? "not-allowed"
-                                                    : "pointer",
-                                            opacity:
-                                                deletingReview ===
-                                                review._id
-                                                    ? 0.5
-                                                    : 1,
+                                                "12px",
+                                            outline:
+                                                "none",
+                                            boxSizing:
+                                                "border-box",
+                                        }}
+                                    />
+                                </div>
+
+
+                                {/* LOADING */}
+
+                                {reviewsLoading ? (
+                                    <div
+                                        style={{
+                                            padding:
+                                                "60px 20px",
+                                            textAlign:
+                                                "center",
+                                            color:
+                                                "var(--muted-text)",
+                                            fontSize:
+                                                "13px",
                                         }}
                                     >
-                                        {deletingReview ===
-                                        review._id
-                                            ? "Deleting..."
-                                            : "Delete"}
-                                    </button>
+                                        Loading reviews...
+                                    </div>
+                                ) : filteredReviews.length ===
+                                    0 ? (
+                                    <div
+                                        style={{
+                                            padding:
+                                                "60px 20px",
+                                            textAlign:
+                                                "center",
+                                            color:
+                                                "var(--muted-text)",
+                                            fontSize:
+                                                "13px",
+                                        }}
+                                    >
+                                        {reviews.length ===
+                                            0
+                                            ? "No customer reviews yet."
+                                            : "No reviews match your search."}
+                                    </div>
+                                ) : (
+                                    <div
+                                        style={{
+                                            display:
+                                                "flex",
+                                            flexDirection:
+                                                "column",
+                                            gap: "12px",
+                                        }}
+                                    >
 
-                                </div>
-                            );
-                        }
+                                        {filteredReviews.map(
+                                            (review) => {
+
+                                                const customerName =
+                                                    review
+                                                        .user
+                                                        ?.name ||
+                                                    "Customer";
+
+                                                const productName =
+                                                    review
+                                                        .product
+                                                        ?.name ||
+                                                    "Product";
+
+                                                const initials =
+                                                    customerName
+                                                        .trim()
+                                                        .charAt(
+                                                            0
+                                                        )
+                                                        .toUpperCase() ||
+                                                    "U";
+
+                                                const reviewText =
+                                                    review.comment ||
+                                                    review.review ||
+                                                    review.text ||
+                                                    review.content ||
+                                                    "No review text.";
+
+                                                return (
+                                                    <div
+                                                        key={
+                                                            review._id
+                                                        }
+                                                        style={{
+                                                            display:
+                                                                "grid",
+                                                            gridTemplateColumns:
+                                                                "48px minmax(180px, 1fr) minmax(180px, 1.2fr) auto",
+                                                            gap:
+                                                                "18px",
+                                                            alignItems:
+                                                                "center",
+                                                            padding:
+                                                                "18px",
+                                                            border:
+                                                                "1px solid var(--light-border)",
+                                                            borderRadius:
+                                                                "14px",
+                                                            background:
+                                                                "var(--milk)",
+                                                        }}
+                                                    >
+
+                                                        {/* CUSTOMER AVATAR */}
+
+                                                        <div
+                                                            style={{
+                                                                width:
+                                                                    "44px",
+                                                                height:
+                                                                    "44px",
+                                                                borderRadius:
+                                                                    "50%",
+                                                                background:
+                                                                    "var(--blush-oat)",
+                                                                display:
+                                                                    "flex",
+                                                                alignItems:
+                                                                    "center",
+                                                                justifyContent:
+                                                                    "center",
+                                                                color:
+                                                                    "var(--cocoa-taupe)",
+                                                                fontFamily:
+                                                                    "Georgia, serif",
+                                                                fontSize:
+                                                                    "17px",
+                                                            }}
+                                                        >
+                                                            {
+                                                                initials
+                                                            }
+                                                        </div>
+
+
+                                                        {/* CUSTOMER */}
+
+                                                        <div>
+                                                            <strong
+                                                                style={{
+                                                                    display:
+                                                                        "block",
+                                                                    color:
+                                                                        "var(--espresso-brown)",
+                                                                    fontFamily:
+                                                                        "Georgia, serif",
+                                                                    fontWeight:
+                                                                        "400",
+                                                                    fontSize:
+                                                                        "15px",
+                                                                }}
+                                                            >
+                                                                {
+                                                                    customerName
+                                                                }
+                                                            </strong>
+
+                                                            <span
+                                                                style={{
+                                                                    display:
+                                                                        "block",
+                                                                    marginTop:
+                                                                        "5px",
+                                                                    color:
+                                                                        "var(--muted-text)",
+                                                                    fontSize:
+                                                                        "10px",
+                                                                }}
+                                                            >
+                                                                {
+                                                                    review
+                                                                        .user
+                                                                        ?.email ||
+                                                                    "No email"
+                                                                }
+                                                            </span>
+
+                                                            <span
+                                                                style={{
+                                                                    display:
+                                                                        "block",
+                                                                    marginTop:
+                                                                        "8px",
+                                                                    color:
+                                                                        "var(--muted-text)",
+                                                                    fontSize:
+                                                                        "9px",
+                                                                }}
+                                                            >
+                                                                {
+                                                                    review.createdAt
+                                                                        ? new Date(
+                                                                            review.createdAt
+                                                                        ).toLocaleDateString(
+                                                                            "en-IN",
+                                                                            {
+                                                                                day: "2-digit",
+                                                                                month: "short",
+                                                                                year: "numeric",
+                                                                            }
+                                                                        )
+                                                                        : "—"
+                                                                }
+                                                            </span>
+                                                        </div>
+
+
+                                                        {/* REVIEW */}
+
+                                                        <div>
+                                                            <div
+                                                                style={{
+                                                                    display:
+                                                                        "flex",
+                                                                    alignItems:
+                                                                        "center",
+                                                                    gap:
+                                                                        "2px",
+                                                                    marginBottom:
+                                                                        "8px",
+                                                                }}
+                                                            >
+                                                                {[
+                                                                    1,
+                                                                    2,
+                                                                    3,
+                                                                    4,
+                                                                    5,
+                                                                ].map(
+                                                                    (
+                                                                        star
+                                                                    ) => (
+                                                                        <span
+                                                                            key={
+                                                                                star
+                                                                            }
+                                                                            style={{
+                                                                                color:
+                                                                                    star <=
+                                                                                        Number(
+                                                                                            review.rating ||
+                                                                                            0
+                                                                                        )
+                                                                                        ? "var(--dusty-rose)"
+                                                                                        : "var(--light-border)",
+                                                                                fontSize:
+                                                                                    "14px",
+                                                                            }}
+                                                                        >
+                                                                            ★
+                                                                        </span>
+                                                                    )
+                                                                )}
+                                                            </div>
+
+                                                            <strong
+                                                                style={{
+                                                                    display:
+                                                                        "block",
+                                                                    color:
+                                                                        "var(--espresso-brown)",
+                                                                    fontSize:
+                                                                        "11px",
+                                                                    marginBottom:
+                                                                        "5px",
+                                                                }}
+                                                            >
+                                                                {
+                                                                    productName
+                                                                }
+                                                            </strong>
+
+                                                            <p
+                                                                style={{
+                                                                    margin:
+                                                                        "0",
+                                                                    color:
+                                                                        "var(--muted-text)",
+                                                                    fontSize:
+                                                                        "11px",
+                                                                    lineHeight:
+                                                                        "1.6",
+                                                                    display:
+                                                                        "-webkit-box",
+                                                                    WebkitLineClamp:
+                                                                        3,
+                                                                    WebkitBoxOrient:
+                                                                        "vertical",
+                                                                    overflow:
+                                                                        "hidden",
+                                                                }}
+                                                            >
+                                                                {
+                                                                    reviewText
+                                                                }
+                                                            </p>
+                                                        </div>
+
+
+                                                        {/* DELETE */}
+
+                                                        <button
+                                                            type="button"
+                                                            disabled={
+                                                                deletingReview ===
+                                                                review._id
+                                                            }
+                                                            onClick={() =>
+                                                                deleteReview(
+                                                                    review._id
+                                                                )
+                                                            }
+                                                            style={{
+                                                                border:
+                                                                    "1px solid #e3c9c4",
+                                                                borderRadius:
+                                                                    "10px",
+                                                                padding:
+                                                                    "9px 13px",
+                                                                background:
+                                                                    "var(--warm-white)",
+                                                                color:
+                                                                    "var(--dusty-rose)",
+                                                                fontFamily:
+                                                                    "inherit",
+                                                                fontSize:
+                                                                    "10px",
+                                                                cursor:
+                                                                    deletingReview ===
+                                                                        review._id
+                                                                        ? "not-allowed"
+                                                                        : "pointer",
+                                                                opacity:
+                                                                    deletingReview ===
+                                                                        review._id
+                                                                        ? 0.5
+                                                                        : 1,
+                                                            }}
+                                                        >
+                                                            {deletingReview ===
+                                                                review._id
+                                                                ? "Deleting..."
+                                                                : "Delete"}
+                                                        </button>
+
+                                                    </div>
+                                                );
+                                            }
+                                        )}
+
+                                    </div>
+                                )}
+
+                            </section>
+
+                        </div>
                     )}
-
-                </div>
-            )}
-
-        </section>
-
-    </div>
-)}
 
             </div>
 

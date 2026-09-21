@@ -33,9 +33,16 @@ const productSchema = new mongoose.Schema(
       max: 5,
     },
 
+    // Main product image
     image: {
       type: String,
       required: true,
+    },
+
+    // Additional product images
+    images: {
+      type: [String],
+      default: [],
     },
 
     description: {
@@ -56,6 +63,6 @@ const productSchema = new mongoose.Schema(
 
 const Product =
   mongoose.models.Product ||
-  mongoose.model("Product", productSchema); // exists? use it, doesn't exist? create it
+  mongoose.model("Product", productSchema);
 
 export default Product;

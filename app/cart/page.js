@@ -7,6 +7,8 @@ import { useEffect, useState } from "react";
 export default function CartPage() {
     const [cartItems, setCartItems] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [removeItem, setRemoveItem] = useState(null);
+    const [removing, setRemoving] = useState(false);
 
     useEffect(() => {
         fetchCart();
@@ -92,6 +94,79 @@ export default function CartPage() {
                 "Failed to remove item:",
                 error
             );
+        }
+    }
+
+    async function handleRemoveItem() {
+        if (!removeItem) return;
+
+        setRemoving(true);
+
+        try {
+            await removeFromCart(removeItem.id);
+
+            setRemoveItem(null);
+
+        } finally {
+            setRemoving(false);
+        }
+    }
+
+    async function handleMoveToWishlist() {
+        if (!removeItem) return;
+
+        setRemoving(true);
+
+        try {
+            // Add product to wishlist
+            const wishlistResponse = await fetch(
+                "/api/wishlist",
+                {
+                    method: "POST",
+
+                    headers: {
+                        "Content-Type":
+                            "application/json",
+                    },
+
+                    body: JSON.stringify({
+                        productId: removeItem.id,
+                    }),
+                }
+            );
+
+            const wishlistData =
+                await wishlistResponse.json();
+
+            if (
+                !wishlistResponse.ok ||
+                !wishlistData.success
+            ) {
+                alert(
+                    wishlistData.message ||
+                    "Failed to move item to wishlist."
+                );
+
+                return;
+            }
+
+            // Remove product from cart
+            await removeFromCart(removeItem.id);
+
+            setRemoveItem(null);
+
+        } catch (error) {
+            console.error(
+                "Move to wishlist error:",
+                error
+            );
+
+            alert(
+                "Something went wrong. Please try again."
+            );
+
+        } finally {
+            setRemoving(false);
         }
     }
 
@@ -225,15 +300,16 @@ export default function CartPage() {
                                     <div className="quantity-control">
 
                                         <button
-                                            onClick={() =>
-                                                updateQuantity(
-                                                    item.id,
-                                                    Math.max(
-                                                        1,
+                                            onClick={() => {
+                                                if (item.quantity === 1) {
+                                                    setRemoveItem(item);
+                                                } else {
+                                                    updateQuantity(
+                                                        item.id,
                                                         item.quantity - 1
-                                                    )
-                                                )
-                                            }
+                                                    );
+                                                }
+                                            }}
                                         >
                                             −
                                         </button>
@@ -355,7 +431,112 @@ export default function CartPage() {
                 </aside>
 
             </section>
+            {removeItem && (
+                <div
+                    className="remove-modal-overlay"
+                    onClick={() => {
+                        if (!removing) {
+                            setRemoveItem(null);
+                        }
+                    }}
+                >
+                    <div
+                        className="remove-modal"
+                        onClick={(event) =>
+                            event.stopPropagation()
+                        }
+                    >
+                        <button
+                            className="remove-modal-close"
+                            onClick={() =>
+                                setRemoveItem(null)
+                            }
+                            disabled={removing}
+                        >
+                            ×
+                        </button>
 
+                        <p className="section-eyebrow">
+                            YOUR GLOWCARE BAG
+                        </p>
+
+                        <h2>
+                            Remove this
+                            <span>product?</span>
+                        </h2>
+
+                        <div className="remove-modal-product">
+
+                            <div className="remove-modal-image">
+                                <Image
+                                    src={removeItem.image}
+                                    alt={removeItem.name}
+                                    fill
+                                />
+                            </div>
+
+                            <div>
+                                <p className="product-category">
+                                    {removeItem.category}
+                                </p>
+
+                                <h3>
+                                    {removeItem.name}
+                                </h3>
+
+                                <p>
+                                    ₹{removeItem.price}
+                                </p>
+                            </div>
+
+                        </div>
+
+                        <p className="remove-modal-description">
+                            You can remove this product completely
+                            or save it to your wishlist for later.
+                        </p>
+
+                        <div className="remove-modal-actions">
+
+                            <button
+                                className="wishlist-modal-button"
+                                onClick={
+                                    handleMoveToWishlist
+                                }
+                                disabled={removing}
+                            >
+                                {removing
+                                    ? "Moving..."
+                                    : "♡ Move to Wishlist"}
+                            </button>
+
+                            <button
+                                className="confirm-remove-button"
+                                onClick={
+                                    handleRemoveItem
+                                }
+                                disabled={removing}
+                            >
+                                {removing
+                                    ? "Removing..."
+                                    : "Remove"}
+                            </button>
+
+                        </div>
+
+                        <button
+                            className="cancel-modal-button"
+                            onClick={() =>
+                                setRemoveItem(null)
+                            }
+                            disabled={removing}
+                        >
+                            Keep in Cart
+                        </button>
+
+                    </div>
+                </div>
+            )}
         </main>
     );
 }

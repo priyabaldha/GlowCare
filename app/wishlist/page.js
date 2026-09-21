@@ -44,12 +44,10 @@ export default function WishlistPage() {
                 "/api/wishlist",
                 {
                     method: "DELETE",
-
                     headers: {
                         "Content-Type":
                             "application/json",
                     },
-
                     body: JSON.stringify({
                         productId,
                     }),
@@ -80,12 +78,10 @@ export default function WishlistPage() {
                 "/api/cart",
                 {
                     method: "POST",
-
                     headers: {
                         "Content-Type":
                             "application/json",
                     },
-
                     body: JSON.stringify({
                         productId,
                         quantity: 1,
@@ -111,26 +107,39 @@ export default function WishlistPage() {
         }
     }
 
+    /* ================================
+       LOADING
+    ================================= */
+
     if (loading) {
         return (
             <main className="wishlist-page">
 
-                <section className="wishlist-empty">
+                <section className="wishlist-loading">
 
                     <p className="section-eyebrow">
                         YOUR GLOWCARE WISHLIST
                     </p>
 
                     <h1>
-                        Loading your
+                        Your
                         <span>favorites.</span>
                     </h1>
+
+                    <p>
+                        Loading your saved products...
+                    </p>
 
                 </section>
 
             </main>
         );
     }
+
+
+    /* ================================
+       EMPTY
+    ================================= */
 
     if (products.length === 0) {
         return (
@@ -155,7 +164,7 @@ export default function WishlistPage() {
 
                     <Link
                         href="/products"
-                        className="primary-button"
+                        className="wishlist-explore-button"
                     >
                         Explore Products
                         <span>→</span>
@@ -167,10 +176,16 @@ export default function WishlistPage() {
         );
     }
 
+
+    /* ================================
+       WISHLIST
+    ================================= */
+
     return (
         <main className="wishlist-page">
 
             {/* Header */}
+
             <section className="wishlist-header">
 
                 <p className="section-eyebrow">
@@ -189,7 +204,9 @@ export default function WishlistPage() {
 
             </section>
 
+
             {/* Products */}
+
             <section className="wishlist-grid">
 
                 {products.map((product) => (
@@ -199,27 +216,56 @@ export default function WishlistPage() {
                     >
 
                         {/* Image */}
-                        <Link
-                            href={`/products/${product._id}`}
-                            className="wishlist-image"
-                        >
-                            <Image
-                                src={product.image}
-                                alt={product.name}
-                                fill
-                                className="wishlist-product-image"
-                            />
-                        </Link>
 
-                        {/* Info */}
+                        <div className="wishlist-image-wrap">
+
+                            <Link
+                                href={`/products/${product._id}`}
+                                className="wishlist-image"
+                            >
+                                <Image
+                                    src={product.image}
+                                    alt={product.name}
+                                    fill
+                                    sizes="
+                                        (max-width: 600px) 100vw,
+                                        (max-width: 1000px) 50vw,
+                                        33vw
+                                    "
+                                    className="wishlist-product-image"
+                                />
+                            </Link>
+
+
+                            {/* Remove */}
+
+                            <button
+                                type="button"
+                                className="wishlist-remove"
+                                onClick={() =>
+                                    removeFromWishlist(
+                                        product._id
+                                    )
+                                }
+                                aria-label={`Remove ${product.name} from wishlist`}
+                            >
+                                ×
+                            </button>
+
+                        </div>
+
+
+                        {/* Product Info */}
+
                         <div className="wishlist-info">
 
-                            <p className="product-category">
+                            <p className="wishlist-category">
                                 {product.category}
                             </p>
 
                             <Link
                                 href={`/products/${product._id}`}
+                                className="wishlist-product-link"
                             >
                                 <h2>
                                     {product.name}
@@ -230,32 +276,26 @@ export default function WishlistPage() {
                                 ₹{product.price}
                             </p>
 
-                            <div className="wishlist-actions">
 
-                                <button
-                                    className="add-to-cart-button"
-                                    onClick={() =>
-                                        addToCart(
-                                            product._id
-                                        )
-                                    }
-                                >
+                            {/* Add to bag */}
+
+                            <button
+                                type="button"
+                                className="wishlist-add-button"
+                                onClick={() =>
+                                    addToCart(
+                                        product._id
+                                    )
+                                }
+                            >
+                                <span>
                                     Add to Bag
-                                    <span>→</span>
-                                </button>
+                                </span>
 
-                                <button
-                                    className="remove-button"
-                                    onClick={() =>
-                                        removeFromWishlist(
-                                            product._id
-                                        )
-                                    }
-                                >
-                                    Remove
-                                </button>
-
-                            </div>
+                                <span className="wishlist-add-arrow">
+                                    →
+                                </span>
+                            </button>
 
                         </div>
 
