@@ -145,121 +145,294 @@ export default function Home() {
 
         </div>
 
-        <div className="category-grid">
+    <div className="category-grid">
 
-          <a
-            href="/products?category=face-wash"
-            className="category-card category-face"
-          >
-            <div className="category-number">
+  {/* Face Wash */}
+  <a
+    href="/products?category=face-wash"
+    className="category-card category-face"
+  >
+    <img
+      src="/images/categories/face-wash.jpeg"
+      alt="Face Wash"
+      className="category-image"
+    />
+
+    <div className="category-overlay"></div>
+
+    <div className="category-number">
+      01
+    </div>
+
+    <div className="category-content">
+      <p>Cleanse</p>
+
+      <h3>Face Wash</h3>
+
+      <span>Explore →</span>
+    </div>
+  </a>
+
+
+  {/* Serums */}
+  <a
+    href="/products?category=serums"
+    className="category-card category-serum"
+  >
+    <img
+      src="/images/categories/serums.jpeg"
+      alt="Serums"
+      className="category-image"
+    />
+
+    <div className="category-overlay"></div>
+
+    <div className="category-number">
+      02
+    </div>
+
+    <div className="category-content">
+      <p>Treat</p>
+
+      <h3>Serums</h3>
+
+      <span>Explore →</span>
+    </div>
+  </a>
+
+
+  {/* Moisturizers */}
+  <a
+    href="/products?category=moisturizers"
+    className="category-card category-moisturizer"
+  >
+    <img
+      src="/images/categories/moisturizers.jpeg"
+      alt="Moisturizers"
+      className="category-image"
+    />
+
+    <div className="category-overlay"></div>
+
+    <div className="category-number">
+      03
+    </div>
+
+    <div className="category-content">
+      <p>Hydrate</p>
+
+      <h3>Moisturizers</h3>
+
+      <span>Explore →</span>
+    </div>
+  </a>
+
+
+  {/* Sunscreen */}
+  <a
+    href="/products?category=sunscreen"
+    className="category-card category-sunscreen"
+  >
+    <img
+      src="/images/categories/sunscreen.jpeg"
+      alt="Sunscreen"
+      className="category-image"
+    />
+
+    <div className="category-overlay"></div>
+
+    <div className="category-number">
+      04
+    </div>
+
+    <div className="category-content">
+      <p>Protect</p>
+
+      <h3>Sunscreen</h3>
+
+      <span>Explore →</span>
+    </div>
+  </a>
+
+
+  {/* Toners */}
+  <a
+    href="/products?category=toners"
+    className="category-card category-toner"
+  >
+    <img
+      src="/images/categories/toners.jpeg"
+      alt="Toners"
+      className="category-image"
+    />
+
+    <div className="category-overlay"></div>
+
+    <div className="category-number">
+      05
+    </div>
+
+    <div className="category-content">
+      <p>Balance</p>
+
+      <h3>Toners</h3>
+
+      <span>Explore →</span>
+    </div>
+  </a>
+
+
+  {/* Lip Care */}
+  <a
+    href="/products?category=lip-care"
+    className="category-card category-lip"
+  >
+    <img
+      src="/images/categories/lip-care.jpeg"
+      alt="Lip Care"
+      className="category-image"
+    />
+
+    <div className="category-overlay"></div>
+
+    <div className="category-number">
+      06
+    </div>
+
+    <div className="category-content">
+      <p>Nourish</p>
+
+      <h3>Lip Care</h3>
+
+      <span>Explore →</span>
+    </div>
+  </a>
+
+</div>
+
+      </section>
+
+            {/* GlowCare Ritual */}
+      <section className="ritual-section">
+
+        <div className="ritual-heading">
+
+          <p className="section-eyebrow">
+            THE GLOWCARE RITUAL
+          </p>
+
+          <h2>
+            A simple routine,
+            <span>made for you.</span>
+          </h2>
+
+          <p className="ritual-description">
+            Three simple steps to keep your everyday
+            skincare routine thoughtful and effortless.
+          </p>
+
+        </div>
+
+
+        <div className="ritual-grid">
+
+          {/* Step 01 */}
+          <div className="ritual-card">
+
+            <div className="ritual-number">
               01
             </div>
 
-            <div className="category-content">
+            <div className="ritual-line"></div>
 
-              <p>Cleanse</p>
+            <p className="ritual-step">
+              CLEANSE
+            </p>
 
-              <h3>Face Wash</h3>
+            <h3>
+              Start fresh.
+            </h3>
 
-              <span>Explore →</span>
+            <p className="ritual-text">
+              Gently cleanse away daily buildup
+              and prepare your skin for the steps ahead.
+            </p>
 
-            </div>
-          </a>
+            <a
+              href="/products?category=face-wash"
+              className="ritual-link"
+            >
+              Face Wash
+              <span>→</span>
+            </a>
 
-          <a
-            href="/products?category=serums"
-            className="category-card category-serum"
-          >
-            <div className="category-number">
+          </div>
+
+
+          {/* Step 02 */}
+          <div className="ritual-card">
+
+            <div className="ritual-number">
               02
             </div>
 
-            <div className="category-content">
+            <div className="ritual-line"></div>
 
-              <p>Treat</p>
+            <p className="ritual-step">
+              TREAT
+            </p>
 
-              <h3>Serums</h3>
+            <h3>
+              Give it care.
+            </h3>
 
-              <span>Explore →</span>
+            <p className="ritual-text">
+              Choose targeted skincare that fits
+              what your skin needs every day.
+            </p>
 
-            </div>
-          </a>
+            <a
+              href="/products?category=serums"
+              className="ritual-link"
+            >
+              Serums
+              <span>→</span>
+            </a>
 
-          <a
-            href="/products?category=moisturizers"
-            className="category-card category-moisturizer"
-          >
-            <div className="category-number">
+          </div>
+
+
+          {/* Step 03 */}
+          <div className="ritual-card">
+
+            <div className="ritual-number">
               03
             </div>
 
-            <div className="category-content">
+            <div className="ritual-line"></div>
 
-              <p>Hydrate</p>
+            <p className="ritual-step">
+              HYDRATE
+            </p>
 
-              <h3>Moisturizers</h3>
+            <h3>
+              Lock in the glow.
+            </h3>
 
-              <span>Explore →</span>
+            <p className="ritual-text">
+              Finish with comfortable hydration
+              to keep your skin feeling soft and cared for.
+            </p>
 
-            </div>
-          </a>
+            <a
+              href="/products?category=moisturizers"
+              className="ritual-link"
+            >
+              Moisturizers
+              <span>→</span>
+            </a>
 
-          <a
-            href="/products?category=sunscreen"
-            className="category-card category-sunscreen"
-          >
-            <div className="category-number">
-              04
-            </div>
-
-            <div className="category-content">
-
-              <p>Protect</p>
-
-              <h3>Sunscreen</h3>
-
-              <span>Explore →</span>
-
-            </div>
-          </a>
-
-          <a
-            href="/products?category=toners"
-            className="category-card category-toner"
-          >
-            <div className="category-number">
-              05
-            </div>
-
-            <div className="category-content">
-
-              <p>Balance</p>
-
-              <h3>Toners</h3>
-
-              <span>Explore →</span>
-
-            </div>
-          </a>
-
-          <a
-            href="/products?category=lip-care"
-            className="category-card category-lip"
-          >
-            <div className="category-number">
-              06
-            </div>
-
-            <div className="category-content">
-
-              <p>Nourish</p>
-
-              <h3>Lip Care</h3>
-
-              <span>Explore →</span>
-
-            </div>
-          </a>
+          </div>
 
         </div>
 

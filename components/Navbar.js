@@ -163,6 +163,10 @@ export default function Navbar() {
               <Link href="/about">
                 About
               </Link>
+
+              <Link href="/faq">
+                FAQ
+              </Link>
             </>
           )}
 

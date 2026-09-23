@@ -2103,13 +2103,6 @@ main {
   font-weight: 600;
 }
 
-/* =========================================
-   Cart Page
-   ========================================= */
-
-.cart-page {
-  min-height: 100vh;
-}
 
 /* =========================================
    Cart Header
@@ -6523,4 +6516,3451 @@ main {
     height: 100%;
     display: block;
     object-fit: cover;
+}
+
+/* =========================================
+   GLOWCARE RITUAL
+========================================= */
+
+.ritual-section {
+    width: 100%;
+    max-width: 1200px;
+
+    margin: 0 auto;
+
+    padding: 120px 0;
+}
+
+
+/* =========================================
+   HEADING
+========================================= */
+
+.ritual-heading {
+    max-width: 620px;
+
+    margin-bottom: 55px;
+}
+
+.ritual-heading .section-eyebrow {
+    display: flex;
+    align-items: center;
+
+    gap: 10px;
+
+    margin: 0 0 18px;
+
+    color: var(--dusty-rose);
+
+    font-size: 9px;
+    font-weight: 700;
+
+    letter-spacing: 0.16em;
+}
+
+.ritual-heading .section-eyebrow::before {
+    content: "";
+
+    width: 28px;
+    height: 1px;
+
+    background: var(--dusty-rose);
+}
+
+.ritual-heading h2 {
+    margin: 0;
+
+    color: var(--espresso-brown);
+
+    font-family: Georgia, serif;
+
+    font-size: clamp(40px, 4.5vw, 58px);
+
+    font-weight: 400;
+
+    line-height: 1;
+
+    letter-spacing: -0.04em;
+}
+
+.ritual-heading h2 span {
+    display: block;
+
+    font-style: italic;
+}
+
+.ritual-description {
+    max-width: 500px;
+
+    margin: 20px 0 0;
+
+    color: var(--muted-text);
+
+    font-size: 12px;
+
+    line-height: 1.8;
+}
+
+
+/* =========================================
+   RITUAL GRID
+========================================= */
+
+.ritual-grid {
+    display: grid;
+
+    grid-template-columns:
+        repeat(3, minmax(0, 1fr));
+
+    border-top: 1px solid var(--light-border);
+}
+
+
+/* =========================================
+   RITUAL CARD
+========================================= */
+
+.ritual-card {
+    position: relative;
+
+    min-height: 310px;
+
+    padding: 28px 30px 25px;
+
+    border-right: 1px solid var(--light-border);
+
+    box-sizing: border-box;
+}
+
+.ritual-card:first-child {
+    border-left: 1px solid var(--light-border);
+}
+
+.ritual-card:last-child {
+    border-right: 1px solid var(--light-border);
+}
+
+
+/* =========================================
+   NUMBER
+========================================= */
+
+.ritual-number {
+    color: var(--blush-oat);
+
+    font-family: Georgia, serif;
+
+    font-size: 32px;
+
+    line-height: 1;
+}
+
+
+/* =========================================
+   SMALL LINE
+========================================= */
+
+.ritual-line {
+    width: 35px;
+    height: 1px;
+
+    margin: 22px 0 25px;
+
+    background: var(--dusty-rose);
+}
+
+
+/* =========================================
+   STEP
+========================================= */
+
+.ritual-step {
+    margin: 0 0 9px;
+
+    color: var(--dusty-rose);
+
+    font-size: 8px;
+    font-weight: 700;
+
+    letter-spacing: 0.15em;
+}
+
+
+/* =========================================
+   TITLE
+========================================= */
+
+.ritual-card h3 {
+    margin: 0;
+
+    color: var(--espresso-brown);
+
+    font-family: Georgia, serif;
+
+    font-size: 24px;
+
+    font-weight: 400;
+
+    line-height: 1.15;
+}
+
+
+/* =========================================
+   DESCRIPTION
+========================================= */
+
+.ritual-text {
+    max-width: 250px;
+
+    margin: 14px 0 25px;
+
+    color: var(--muted-text);
+
+    font-size: 10px;
+
+    line-height: 1.8;
+}
+
+
+/* =========================================
+   LINK
+========================================= */
+
+.ritual-link {
+    display: inline-flex;
+
+    align-items: center;
+
+    gap: 10px;
+
+    color: var(--espresso-brown);
+
+    font-size: 9px;
+    font-weight: 700;
+
+    text-decoration: none;
+
+    transition:
+        color 0.2s ease,
+        gap 0.2s ease;
+}
+
+.ritual-link span {
+    font-size: 13px;
+}
+
+.ritual-link:hover {
+    gap: 14px;
+
+    color: var(--dusty-rose);
+}
+
+
+/* =========================================
+   HOVER
+========================================= */
+
+.ritual-card {
+    transition:
+        background 0.25s ease;
+}
+
+.ritual-card:hover {
+    background: var(--milk);
+}
+
+
+/* =========================================
+   TABLET
+========================================= */
+
+@media (max-width: 900px) {
+
+    .ritual-section {
+        padding: 90px 5%;
+    }
+
+    .ritual-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .ritual-card {
+        min-height: auto;
+
+        padding: 28px 25px;
+
+        border-right: 1px solid var(--light-border);
+        border-left: 1px solid var(--light-border);
+
+        border-bottom: 1px solid var(--light-border);
+    }
+
+    .ritual-card:first-child {
+        border-top: 1px solid var(--light-border);
+    }
+
+    .ritual-text {
+        max-width: 450px;
+    }
+}
+
+
+/* =========================================
+   MOBILE
+========================================= */
+
+@media (max-width: 600px) {
+
+    .ritual-section {
+        padding: 75px 5%;
+    }
+
+    .ritual-heading {
+        margin-bottom: 40px;
+    }
+
+    .ritual-heading h2 {
+        font-size: 40px;
+    }
+
+    .ritual-description {
+        font-size: 11px;
+    }
+
+    .ritual-card {
+        padding: 24px 20px;
+    }
+
+    .ritual-card h3 {
+        font-size: 22px;
+    }
+}
+
+/* =========================================
+   CATEGORY IMAGES
+========================================= */
+
+.category-card {
+    position: relative;
+    overflow: hidden;
+}
+
+.category-image {
+    position: absolute;
+
+    inset: 0;
+
+    width: 100%;
+    height: 100%;
+
+    object-fit: cover;
+
+    z-index: 0;
+
+    transition:
+        transform 0.5s ease;
+}
+
+.category-overlay {
+    position: absolute;
+
+    inset: 0;
+
+    z-index: 1;
+
+    background:
+        linear-gradient(
+            to bottom,
+            rgba(63, 39, 36, 0.03) 0%,
+            rgba(63, 39, 36, 0.08) 45%,
+            rgba(63, 39, 36, 0.62) 100%
+        );
+}
+
+.category-card:hover .category-image {
+    transform: scale(1.05);
+}
+
+
+/* Keep content above image */
+
+.category-number {
+    position: relative;
+    z-index: 2;
+}
+
+.category-content {
+    position: relative;
+    z-index: 2;
+}
+
+
+/* =========================================
+   TEXT OVER IMAGE
+========================================= */
+
+.category-card .category-content p {
+    color: rgba(255, 253, 248, 0.85);
+}
+
+.category-card .category-content h3 {
+    color: #fffdf8;
+}
+
+.category-card .category-content span {
+    color: #fffdf8;
+
+    border-bottom-color:
+        rgba(255, 253, 248, 0.65);
+}
+
+.category-card .category-number {
+    color: rgba(255, 253, 248, 0.9);
+}
+
+/* =========================================
+   ABOUT PAGE
+========================================= */
+
+.about-page {
+    width: 100%;
+    overflow: hidden;
+}
+
+
+/* =========================================
+   ABOUT HERO
+========================================= */
+
+.about-hero {
+    position: relative;
+
+    min-height: 72vh;
+
+    max-width: 1400px;
+    margin: 0 auto;
+
+    padding: 100px 7%;
+
+    display: flex;
+    align-items: center;
+
+    background:
+        radial-gradient(
+            circle at 82% 45%,
+            rgba(185, 143, 136, 0.16),
+            transparent 28%
+        );
+}
+
+.about-hero-content {
+    max-width: 900px;
+}
+
+.about-hero h1 {
+    margin: 0;
+
+    color: var(--espresso-brown);
+
+    font-size: clamp(58px, 8vw, 108px);
+
+    line-height: 0.92;
+
+    letter-spacing: -5px;
+
+    font-weight: 500;
+}
+
+.about-hero h1 span {
+    display: block;
+
+    color: var(--dusty-rose);
+
+    font-family: Georgia, serif;
+
+    font-style: italic;
+
+    font-weight: 400;
+}
+
+.about-hero-description {
+    max-width: 500px;
+
+    margin-top: 32px;
+
+    color: var(--cocoa-taupe);
+
+    font-size: 16px;
+
+    line-height: 1.8;
+}
+
+.about-hero-number {
+    position: absolute;
+
+    right: 7%;
+    bottom: 70px;
+
+    color: var(--blush-oat);
+
+    font-family: Georgia, serif;
+
+    font-size: 90px;
+
+    line-height: 1;
+}
+
+
+/* =========================================
+   STORY
+========================================= */
+
+.about-story {
+    max-width: 1200px;
+
+    margin: 0 auto;
+
+    padding: 120px 7%;
+
+    display: grid;
+
+    grid-template-columns: 0.35fr 1fr;
+
+    gap: 80px;
+
+    border-top: 1px solid var(--light-border);
+}
+
+.about-story-label {
+    padding-top: 10px;
+}
+
+.about-story-content {
+    max-width: 720px;
+}
+
+.about-story-content h2 {
+    margin: 0 0 30px;
+
+    color: var(--espresso-brown);
+
+    font-family: Georgia, serif;
+
+    font-size: clamp(38px, 5vw, 62px);
+
+    font-weight: 400;
+
+    line-height: 1;
+
+    letter-spacing: -2px;
+}
+
+.about-story-content h2 span {
+    display: block;
+
+    color: var(--dusty-rose);
+
+    font-style: italic;
+}
+
+.about-story-content p {
+    max-width: 650px;
+
+    margin-top: 18px;
+
+    color: var(--muted-text);
+
+    font-size: 14px;
+
+    line-height: 1.9;
+}
+
+
+/* =========================================
+   PHILOSOPHY
+========================================= */
+
+.about-philosophy {
+    padding: 120px 7%;
+
+    background: var(--blush-oat);
+}
+
+.about-section-heading {
+    max-width: 1200px;
+
+    margin: 0 auto 60px;
+}
+
+.about-section-heading h2 {
+    margin: 0;
+
+    color: var(--espresso-brown);
+
+    font-size: clamp(42px, 5vw, 68px);
+
+    line-height: 1;
+
+    letter-spacing: -3px;
+
+    font-weight: 500;
+}
+
+.about-section-heading h2 span {
+    display: block;
+
+    color: var(--dusty-rose);
+
+    font-family: Georgia, serif;
+
+    font-style: italic;
+
+    font-weight: 400;
+}
+
+.about-values {
+    max-width: 1200px;
+
+    margin: 0 auto;
+
+    display: grid;
+
+    grid-template-columns:
+        repeat(3, minmax(0, 1fr));
+
+    gap: 18px;
+}
+
+.about-value-card {
+    min-height: 300px;
+
+    padding: 30px;
+
+    display: flex;
+
+    flex-direction: column;
+
+    justify-content: space-between;
+
+    background: var(--milk);
+
+    border-radius: var(--radius-xl);
+
+    border: 1px solid rgba(122, 98, 88, 0.12);
+
+    transition:
+        transform 0.3s ease,
+        box-shadow 0.3s ease;
+}
+
+.about-value-card:hover {
+    transform: translateY(-5px);
+
+    box-shadow: var(--shadow-card);
+}
+
+.about-value-number {
+    color: var(--dusty-rose);
+
+    font-family: Georgia, serif;
+
+    font-size: 30px;
+}
+
+.about-value-label {
+    margin-bottom: 8px;
+
+    color: var(--dusty-rose);
+
+    font-size: 9px;
+
+    font-weight: 700;
+
+    letter-spacing: 1.5px;
+}
+
+.about-value-card h3 {
+    margin: 0;
+
+    color: var(--espresso-brown);
+
+    font-family: Georgia, serif;
+
+    font-size: 28px;
+
+    font-weight: 400;
+}
+
+.about-value-card > div > p:last-child {
+    max-width: 280px;
+
+    margin-top: 14px;
+
+    color: var(--muted-text);
+
+    font-size: 11px;
+
+    line-height: 1.8;
+}
+
+
+/* =========================================
+   RITUAL
+========================================= */
+
+.about-ritual {
+    max-width: 1200px;
+
+    margin: 0 auto;
+
+    padding: 120px 7%;
+}
+
+.about-ritual-intro {
+    max-width: 650px;
+
+    margin-bottom: 60px;
+}
+
+.about-ritual-intro h2 {
+    margin: 0;
+
+    color: var(--espresso-brown);
+
+    font-size: clamp(42px, 5vw, 68px);
+
+    line-height: 1;
+
+    letter-spacing: -3px;
+
+    font-weight: 500;
+}
+
+.about-ritual-intro h2 span {
+    display: block;
+
+    color: var(--dusty-rose);
+
+    font-family: Georgia, serif;
+
+    font-style: italic;
+
+    font-weight: 400;
+}
+
+.about-ritual-intro > p:last-child {
+    max-width: 450px;
+
+    margin-top: 22px;
+
+    color: var(--muted-text);
+
+    font-size: 14px;
+
+    line-height: 1.8;
+}
+
+.about-ritual-steps {
+    display: grid;
+
+    grid-template-columns:
+        repeat(3, 1fr);
+
+    border-top: 1px solid var(--light-border);
+}
+
+.about-ritual-step {
+    min-height: 270px;
+
+    padding: 28px 30px;
+
+    border-right: 1px solid var(--light-border);
+}
+
+.about-ritual-step:first-child {
+    border-left: 1px solid var(--light-border);
+}
+
+.about-ritual-step > span {
+    color: var(--blush-oat);
+
+    font-family: Georgia, serif;
+
+    font-size: 32px;
+}
+
+.about-ritual-step > p {
+    margin-top: 30px;
+
+    color: var(--dusty-rose);
+
+    font-size: 9px;
+
+    font-weight: 700;
+
+    letter-spacing: 1.5px;
+}
+
+.about-ritual-step h3 {
+    margin: 8px 0 20px;
+
+    color: var(--espresso-brown);
+
+    font-family: Georgia, serif;
+
+    font-size: 25px;
+
+    font-weight: 400;
+}
+
+.about-ritual-step a {
+    color: var(--cocoa-taupe);
+
+    font-size: 11px;
+
+    font-weight: 600;
+
+    border-bottom: 1px solid var(--cocoa-taupe);
+
+    padding-bottom: 3px;
+
+    transition: all 0.25s ease;
+}
+
+.about-ritual-step a:hover {
+    color: var(--dusty-rose);
+
+    border-color: var(--dusty-rose);
+}
+
+
+/* =========================================
+   STATEMENT
+========================================= */
+
+.about-statement {
+    padding: 130px 7%;
+
+    background: var(--espresso-brown);
+
+    text-align: center;
+}
+
+.about-statement p {
+    max-width: 950px;
+
+    margin: 0 auto;
+
+    color: var(--milk);
+
+    font-family: Georgia, serif;
+
+    font-size: clamp(38px, 5vw, 70px);
+
+    line-height: 1.05;
+
+    font-weight: 400;
+
+    letter-spacing: -2px;
+}
+
+.about-statement span {
+    display: block;
+
+    color: var(--dusty-rose);
+
+    font-style: italic;
+}
+
+
+/* =========================================
+   CTA
+========================================= */
+
+.about-cta {
+    padding: 120px 20px;
+
+    text-align: center;
+}
+
+.about-cta .section-eyebrow {
+    justify-content: center;
+}
+
+.about-cta h2 {
+    margin: 0 auto 35px;
+
+    color: var(--espresso-brown);
+
+    font-size: clamp(42px, 5vw, 68px);
+
+    line-height: 1;
+
+    letter-spacing: -3px;
+
+    font-weight: 500;
+}
+
+.about-cta h2 span {
+    display: block;
+
+    color: var(--dusty-rose);
+
+    font-family: Georgia, serif;
+
+    font-style: italic;
+
+    font-weight: 400;
+}
+
+.about-cta .primary-button {
+    margin: 0 auto;
+}
+
+
+/* =========================================
+   ABOUT RESPONSIVE
+========================================= */
+
+@media (max-width: 900px) {
+
+    .about-hero {
+        min-height: 60vh;
+
+        padding: 80px 5%;
+    }
+
+    .about-hero-number {
+        right: 5%;
+        bottom: 40px;
+
+        font-size: 65px;
+    }
+
+    .about-story {
+        padding: 90px 5%;
+
+        grid-template-columns: 1fr;
+
+        gap: 25px;
+    }
+
+    .about-values {
+        grid-template-columns: 1fr;
+    }
+
+    .about-philosophy,
+    .about-ritual {
+        padding: 90px 5%;
+    }
+
+    .about-ritual-steps {
+        grid-template-columns: 1fr;
+    }
+
+    .about-ritual-step {
+        border-left: 1px solid var(--light-border);
+
+        border-bottom: 1px solid var(--light-border);
+    }
+
+    .about-ritual-step:first-child {
+        border-top: 1px solid var(--light-border);
+    }
+
+    .about-ritual-step:last-child {
+        border-bottom: 1px solid var(--light-border);
+    }
+}
+
+
+@media (max-width: 600px) {
+
+    .about-hero {
+        min-height: 65vh;
+
+        padding: 70px 20px;
+    }
+
+    .about-hero h1 {
+        font-size: 52px;
+
+        letter-spacing: -3px;
+    }
+
+    .about-hero-description {
+        font-size: 14px;
+    }
+
+    .about-hero-number {
+        font-size: 50px;
+    }
+
+    .about-story {
+        padding: 75px 20px;
+    }
+
+    .about-story-content h2 {
+        font-size: 40px;
+    }
+
+    .about-philosophy,
+    .about-ritual {
+        padding: 75px 20px;
+    }
+
+    .about-section-heading h2,
+    .about-ritual-intro h2,
+    .about-cta h2 {
+        font-size: 42px;
+    }
+
+    .about-value-card {
+        min-height: 270px;
+    }
+
+    .about-statement {
+        padding: 90px 20px;
+    }
+
+    .about-statement p {
+        font-size: 38px;
+    }
+
+    .about-cta {
+        padding: 90px 20px;
+    }
+}
+
+/* =========================================
+   ABOUT PAGE
+========================================= */
+
+.about-page {
+    width: 100%;
+    overflow: hidden;
+}
+
+
+/* =========================================
+   ABOUT HERO
+========================================= */
+
+.about-hero {
+    position: relative;
+
+    min-height: 72vh;
+
+    max-width: 1400px;
+    margin: 0 auto;
+
+    padding: 100px 7%;
+
+    display: flex;
+    align-items: center;
+
+    background:
+        radial-gradient(
+            circle at 82% 45%,
+            rgba(185, 143, 136, 0.16),
+            transparent 28%
+        );
+}
+
+.about-hero-content {
+    max-width: 900px;
+}
+
+.about-hero h1 {
+    margin: 0;
+
+    color: var(--espresso-brown);
+
+    font-size: clamp(58px, 8vw, 108px);
+
+    line-height: 0.92;
+
+    letter-spacing: -5px;
+
+    font-weight: 500;
+}
+
+.about-hero h1 span {
+    display: block;
+
+    color: var(--dusty-rose);
+
+    font-family: Georgia, serif;
+
+    font-style: italic;
+
+    font-weight: 400;
+}
+
+.about-hero-description {
+    max-width: 500px;
+
+    margin-top: 32px;
+
+    color: var(--cocoa-taupe);
+
+    font-size: 16px;
+
+    line-height: 1.8;
+}
+
+.about-hero-number {
+    position: absolute;
+
+    right: 7%;
+    bottom: 70px;
+
+    color: var(--blush-oat);
+
+    font-family: Georgia, serif;
+
+    font-size: 90px;
+
+    line-height: 1;
+}
+
+
+/* =========================================
+   STORY
+========================================= */
+
+.about-story {
+    max-width: 1200px;
+
+    margin: 0 auto;
+
+    padding: 120px 7%;
+
+    display: grid;
+
+    grid-template-columns: 0.35fr 1fr;
+
+    gap: 80px;
+
+    border-top: 1px solid var(--light-border);
+}
+
+.about-story-label {
+    padding-top: 10px;
+}
+
+.about-story-content {
+    max-width: 720px;
+}
+
+.about-story-content h2 {
+    margin: 0 0 30px;
+
+    color: var(--espresso-brown);
+
+    font-family: Georgia, serif;
+
+    font-size: clamp(38px, 5vw, 62px);
+
+    font-weight: 400;
+
+    line-height: 1;
+
+    letter-spacing: -2px;
+}
+
+.about-story-content h2 span {
+    display: block;
+
+    color: var(--dusty-rose);
+
+    font-style: italic;
+}
+
+.about-story-content p {
+    max-width: 650px;
+
+    margin-top: 18px;
+
+    color: var(--muted-text);
+
+    font-size: 14px;
+
+    line-height: 1.9;
+}
+
+
+/* =========================================
+   PHILOSOPHY
+========================================= */
+
+.about-philosophy {
+    padding: 120px 7%;
+
+    background: var(--blush-oat);
+}
+
+.about-section-heading {
+    max-width: 1200px;
+
+    margin: 0 auto 60px;
+}
+
+.about-section-heading h2 {
+    margin: 0;
+
+    color: var(--espresso-brown);
+
+    font-size: clamp(42px, 5vw, 68px);
+
+    line-height: 1;
+
+    letter-spacing: -3px;
+
+    font-weight: 500;
+}
+
+.about-section-heading h2 span {
+    display: block;
+
+    color: var(--dusty-rose);
+
+    font-family: Georgia, serif;
+
+    font-style: italic;
+
+    font-weight: 400;
+}
+
+.about-values {
+    max-width: 1200px;
+
+    margin: 0 auto;
+
+    display: grid;
+
+    grid-template-columns:
+        repeat(3, minmax(0, 1fr));
+
+    gap: 18px;
+}
+
+.about-value-card {
+    min-height: 300px;
+
+    padding: 30px;
+
+    display: flex;
+
+    flex-direction: column;
+
+    justify-content: space-between;
+
+    background: var(--milk);
+
+    border-radius: var(--radius-xl);
+
+    border: 1px solid rgba(122, 98, 88, 0.12);
+
+    transition:
+        transform 0.3s ease,
+        box-shadow 0.3s ease;
+}
+
+.about-value-card:hover {
+    transform: translateY(-5px);
+
+    box-shadow: var(--shadow-card);
+}
+
+.about-value-number {
+    color: var(--dusty-rose);
+
+    font-family: Georgia, serif;
+
+    font-size: 30px;
+}
+
+.about-value-label {
+    margin-bottom: 8px;
+
+    color: var(--dusty-rose);
+
+    font-size: 9px;
+
+    font-weight: 700;
+
+    letter-spacing: 1.5px;
+}
+
+.about-value-card h3 {
+    margin: 0;
+
+    color: var(--espresso-brown);
+
+    font-family: Georgia, serif;
+
+    font-size: 28px;
+
+    font-weight: 400;
+}
+
+.about-value-card > div > p:last-child {
+    max-width: 280px;
+
+    margin-top: 14px;
+
+    color: var(--muted-text);
+
+    font-size: 11px;
+
+    line-height: 1.8;
+}
+
+
+/* =========================================
+   RITUAL
+========================================= */
+
+.about-ritual {
+    max-width: 1200px;
+
+    margin: 0 auto;
+
+    padding: 120px 7%;
+}
+
+.about-ritual-intro {
+    max-width: 650px;
+
+    margin-bottom: 60px;
+}
+
+.about-ritual-intro h2 {
+    margin: 0;
+
+    color: var(--espresso-brown);
+
+    font-size: clamp(42px, 5vw, 68px);
+
+    line-height: 1;
+
+    letter-spacing: -3px;
+
+    font-weight: 500;
+}
+
+.about-ritual-intro h2 span {
+    display: block;
+
+    color: var(--dusty-rose);
+
+    font-family: Georgia, serif;
+
+    font-style: italic;
+
+    font-weight: 400;
+}
+
+.about-ritual-intro > p:last-child {
+    max-width: 450px;
+
+    margin-top: 22px;
+
+    color: var(--muted-text);
+
+    font-size: 14px;
+
+    line-height: 1.8;
+}
+
+.about-ritual-steps {
+    display: grid;
+
+    grid-template-columns:
+        repeat(3, 1fr);
+
+    border-top: 1px solid var(--light-border);
+}
+
+.about-ritual-step {
+    min-height: 270px;
+
+    padding: 28px 30px;
+
+    border-right: 1px solid var(--light-border);
+}
+
+.about-ritual-step:first-child {
+    border-left: 1px solid var(--light-border);
+}
+
+.about-ritual-step > span {
+    color: var(--blush-oat);
+
+    font-family: Georgia, serif;
+
+    font-size: 32px;
+}
+
+.about-ritual-step > p {
+    margin-top: 30px;
+
+    color: var(--dusty-rose);
+
+    font-size: 9px;
+
+    font-weight: 700;
+
+    letter-spacing: 1.5px;
+}
+
+.about-ritual-step h3 {
+    margin: 8px 0 20px;
+
+    color: var(--espresso-brown);
+
+    font-family: Georgia, serif;
+
+    font-size: 25px;
+
+    font-weight: 400;
+}
+
+.about-ritual-step a {
+    color: var(--cocoa-taupe);
+
+    font-size: 11px;
+
+    font-weight: 600;
+
+    border-bottom: 1px solid var(--cocoa-taupe);
+
+    padding-bottom: 3px;
+
+    transition: all 0.25s ease;
+}
+
+.about-ritual-step a:hover {
+    color: var(--dusty-rose);
+
+    border-color: var(--dusty-rose);
+}
+
+
+/* =========================================
+   STATEMENT
+========================================= */
+
+.about-statement {
+    padding: 130px 7%;
+
+    background: var(--espresso-brown);
+
+    text-align: center;
+}
+
+.about-statement p {
+    max-width: 950px;
+
+    margin: 0 auto;
+
+    color: var(--milk);
+
+    font-family: Georgia, serif;
+
+    font-size: clamp(38px, 5vw, 70px);
+
+    line-height: 1.05;
+
+    font-weight: 400;
+
+    letter-spacing: -2px;
+}
+
+.about-statement span {
+    display: block;
+
+    color: var(--dusty-rose);
+
+    font-style: italic;
+}
+
+
+/* =========================================
+   CTA
+========================================= */
+
+.about-cta {
+    padding: 120px 20px;
+
+    text-align: center;
+}
+
+.about-cta .section-eyebrow {
+    justify-content: center;
+}
+
+.about-cta h2 {
+    margin: 0 auto 35px;
+
+    color: var(--espresso-brown);
+
+    font-size: clamp(42px, 5vw, 68px);
+
+    line-height: 1;
+
+    letter-spacing: -3px;
+
+    font-weight: 500;
+}
+
+.about-cta h2 span {
+    display: block;
+
+    color: var(--dusty-rose);
+
+    font-family: Georgia, serif;
+
+    font-style: italic;
+
+    font-weight: 400;
+}
+
+.about-cta .primary-button {
+    margin: 0 auto;
+}
+
+
+/* =========================================
+   ABOUT RESPONSIVE
+========================================= */
+
+@media (max-width: 900px) {
+
+    .about-hero {
+        min-height: 60vh;
+
+        padding: 80px 5%;
+    }
+
+    .about-hero-number {
+        right: 5%;
+        bottom: 40px;
+
+        font-size: 65px;
+    }
+
+    .about-story {
+        padding: 90px 5%;
+
+        grid-template-columns: 1fr;
+
+        gap: 25px;
+    }
+
+    .about-values {
+        grid-template-columns: 1fr;
+    }
+
+    .about-philosophy,
+    .about-ritual {
+        padding: 90px 5%;
+    }
+
+    .about-ritual-steps {
+        grid-template-columns: 1fr;
+    }
+
+    .about-ritual-step {
+        border-left: 1px solid var(--light-border);
+
+        border-bottom: 1px solid var(--light-border);
+    }
+
+    .about-ritual-step:first-child {
+        border-top: 1px solid var(--light-border);
+    }
+
+    .about-ritual-step:last-child {
+        border-bottom: 1px solid var(--light-border);
+    }
+}
+
+
+@media (max-width: 600px) {
+
+    .about-hero {
+        min-height: 65vh;
+
+        padding: 70px 20px;
+    }
+
+    .about-hero h1 {
+        font-size: 52px;
+
+        letter-spacing: -3px;
+    }
+
+    .about-hero-description {
+        font-size: 14px;
+    }
+
+    .about-hero-number {
+        font-size: 50px;
+    }
+
+    .about-story {
+        padding: 75px 20px;
+    }
+
+    .about-story-content h2 {
+        font-size: 40px;
+    }
+
+    .about-philosophy,
+    .about-ritual {
+        padding: 75px 20px;
+    }
+
+    .about-section-heading h2,
+    .about-ritual-intro h2,
+    .about-cta h2 {
+        font-size: 42px;
+    }
+
+    .about-value-card {
+        min-height: 270px;
+    }
+
+    .about-statement {
+        padding: 90px 20px;
+    }
+
+    .about-statement p {
+        font-size: 38px;
+    }
+
+    .about-cta {
+        padding: 90px 20px;
+    }
+}
+
+/* =========================================
+   ORGANIC BLOB IMAGE
+========================================= */
+
+.about-story-image-wrap {
+    position: relative;
+
+    width: 390px;
+    height: 390px;
+
+    overflow: hidden;
+
+    background: var(--blush-oat);
+
+    /* Organic blob shape */
+    border-radius:
+        58% 42% 55% 45%
+        /
+        42% 55% 45% 58%;
+
+    transform: rotate(-2deg);
+}
+
+.about-story-image {
+    width: 100%;
+    height: 100%;
+
+    display: block;
+
+    object-fit: cover;
+
+    transform: rotate(2deg) scale(1.03);
+
+    transition: transform 0.5s ease;
+}
+
+.about-story-image-wrap:hover .about-story-image {
+    transform: rotate(2deg) scale(1.07);
+}
+
+/* =========================================================
+   GLOWCARE FAQ PAGE
+   ========================================================= */
+
+.gc-faq-page {
+    width: 100%;
+    min-height: 100vh;
+    background: var(--warm-white);
+    overflow: hidden;
+}
+
+
+/* =========================================================
+   HERO
+   KEEPING THIS EXACTLY AS YOUR CURRENT VERSION
+   ========================================================= */
+
+.gc-faq-hero {
+    position: relative;
+    min-height: 68vh;
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 90px 7%;
+    display: flex;
+    align-items: center;
+    box-sizing: border-box;
+    border-bottom: 1px solid var(--light-border);
+    background:
+        radial-gradient(
+            circle at 78% 45%,
+            rgba(185, 143, 136, 0.15),
+            transparent 27%
+        );
+}
+
+.gc-faq-hero-content {
+    position: relative;
+    z-index: 2;
+    max-width: 850px;
+}
+
+.gc-faq-eyebrow {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0 0 20px;
+    color: var(--dusty-rose);
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+}
+
+.gc-faq-eyebrow::before {
+    content: "";
+    width: 28px;
+    height: 1px;
+    background: var(--dusty-rose);
+}
+
+.gc-faq-hero h1 {
+    margin: 0;
+    color: var(--espresso-brown);
+    font-size: clamp(
+        58px,
+        7vw,
+        96px
+    );
+    font-weight: 500;
+    line-height: 0.92;
+    letter-spacing: -4px;
+}
+
+.gc-faq-hero h1 span {
+    display: block;
+    color: var(--dusty-rose);
+    font-family: Georgia, serif;
+    font-style: italic;
+    font-weight: 400;
+}
+
+.gc-faq-intro {
+    max-width: 500px;
+    margin: 30px 0 0;
+    color: var(--muted-text);
+    font-size: 13px;
+    line-height: 1.85;
+}
+
+
+/* =========================================================
+   HERO ORGANIC SHAPE
+   ========================================================= */
+
+.gc-faq-hero-shape {
+    position: absolute;
+    right: 10%;
+    top: 50%;
+    width: 280px;
+    height: 300px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--blush-oat);
+    border-radius:
+        45% 55% 52% 48%
+        /
+        58% 43% 57% 42%;
+    transform:
+        translateY(-50%)
+        rotate(7deg);
+    z-index: 1;
+}
+
+.gc-faq-hero-shape::before {
+    content: "";
+    position: absolute;
+    inset: 22px;
+    border: 1px solid
+        rgba(91, 62, 58, 0.12);
+    border-radius:
+        50% 44% 56% 48%
+        /
+        44% 55% 45% 58%;
+}
+
+.gc-faq-hero-shape span {
+    color: var(--espresso-brown);
+    font-family: Georgia, serif;
+    font-size: 120px;
+    font-weight: 400;
+    transform: rotate(-7deg);
+}
+
+.gc-faq-hero-number {
+    position: absolute;
+    right: 7%;
+    bottom: 55px;
+    color: var(--blush-oat);
+    font-family: Georgia, serif;
+    font-size: 90px;
+    line-height: 1;
+    z-index: 2;
+}
+
+
+/* =========================================================
+   INTRO STRIP
+   ========================================================= */
+
+.gc-faq-intro-strip {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 65px 6%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 40px;
+    border-bottom: 1px solid var(--light-border);
+}
+
+.gc-faq-intro-strip p {
+    margin: 0;
+    color: var(--espresso-brown);
+    font-family: Georgia, serif;
+    font-size: 30px;
+    font-weight: 400;
+    letter-spacing: -0.02em;
+}
+
+.gc-faq-intro-strip span {
+    max-width: 330px;
+    color: var(--muted-text);
+    font-size: 11px;
+    line-height: 1.8;
+    text-align: right;
+}
+
+
+/* =========================================================
+   FAQ CONTENT
+   ========================================================= */
+
+.gc-faq-content {
+    position: relative;
+    width: 100%;
+    max-width: 1250px;
+    margin: 0 auto;
+    padding: 105px 5% 140px;
+    box-sizing: border-box;
+}
+
+
+/* Subtle editorial side labels */
+
+.gc-faq-content::before {
+    content: "GLOWCARE";
+    position: absolute;
+    left: -45px;
+    top: 180px;
+    writing-mode: vertical-rl;
+    transform: rotate(180deg);
+    color: var(--blush-oat);
+    font-size: 8px;
+    font-weight: 700;
+    letter-spacing: 0.28em;
+}
+
+.gc-faq-content::after {
+    content: "SKINCARE / EVERYDAY RITUAL";
+    position: absolute;
+    right: -75px;
+    top: 500px;
+    writing-mode: vertical-rl;
+    color: var(--blush-oat);
+    font-size: 8px;
+    font-weight: 700;
+    letter-spacing: 0.20em;
+}
+
+
+/* =========================================================
+   FAQ SECTION
+   ========================================================= */
+
+.gc-faq-section {
+    position: relative;
+    display: grid;
+    grid-template-columns: 300px minmax(0, 1fr);
+    gap: 90px;
+    padding: 70px 0;
+}
+
+.gc-faq-section + .gc-faq-section {
+    border-top: 1px solid var(--light-border);
+}
+
+.gc-faq-section-side {
+    position: relative;
+    padding-top: 5px;
+}
+
+
+/* Large section number */
+
+.gc-faq-section-number {
+    display: block;
+    margin-bottom: 25px;
+    color: var(--blush-oat);
+    font-family: Georgia, serif;
+    font-size: 48px;
+    line-height: 1;
+}
+
+
+/* Category title */
+
+.gc-faq-section-side h2 {
+    max-width: 260px;
+    margin: 0;
+    color: var(--espresso-brown);
+    font-family: Georgia, serif;
+    font-size: 38px;
+    font-weight: 400;
+    line-height: 1.04;
+    letter-spacing: -0.035em;
+}
+
+
+/* =========================================================
+   FAQ LIST
+   ========================================================= */
+
+.gc-faq-list {
+    border-top: 1px solid var(--light-border);
+}
+
+
+/* =========================================================
+   FAQ ITEM
+   ========================================================= */
+
+.gc-faq-item {
+    border-bottom: 1px solid var(--light-border);
+    transition:
+        background 0.25s ease;
+}
+
+.gc-faq-item:hover {
+    background: rgba(232, 199, 192, 0.10);
+}
+
+.gc-faq-item-open {
+    background: var(--milk);
+}
+
+
+/* =========================================================
+   QUESTION
+   ========================================================= */
+
+.gc-faq-question {
+    width: 100%;
+    min-height: 92px;
+    padding: 22px 4px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 35px;
+    border: none;
+    background: transparent;
+    color: var(--espresso-brown);
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.5;
+    text-align: left;
+    cursor: pointer;
+}
+
+.gc-faq-question-text {
+    transition:
+        color 0.2s ease,
+        padding-left 0.25s ease;
+}
+
+.gc-faq-question:hover
+.gc-faq-question-text {
+    color: var(--dusty-rose);
+    padding-left: 5px;
+}
+
+
+/* =========================================================
+   ICON
+   ========================================================= */
+
+.gc-faq-icon {
+    flex-shrink: 0;
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--light-border);
+    border-radius: 50%;
+    background: var(--warm-white);
+    color: var(--espresso-brown);
+    font-size: 18px;
+    font-weight: 300;
+    transition:
+        background 0.25s ease,
+        color 0.25s ease,
+        transform 0.25s ease;
+}
+
+.gc-faq-item-open .gc-faq-icon {
+    background: var(--espresso-brown);
+    border-color: var(--espresso-brown);
+    color: var(--milk);
+    transform: rotate(180deg);
+}
+
+
+/* =========================================================
+   ANSWER
+   ========================================================= */
+
+.gc-faq-answer {
+    overflow: hidden;
+    transition:
+        max-height 0.4s ease;
+}
+
+.gc-faq-answer p {
+    max-width: 680px;
+    margin: 0;
+    padding:
+        0 55px 30px 4px;
+    color: var(--muted-text);
+    font-size: 12px;
+    line-height: 1.9;
+}
+
+
+/* =========================================================
+   CONTACT CTA
+   ========================================================= */
+
+.gc-faq-cta {
+    position: relative;
+    overflow: hidden;
+    padding: 120px 7%;
+    background: var(--espresso-brown);
+}
+
+.gc-faq-cta-content {
+    position: relative;
+    z-index: 2;
+    max-width: 650px;
+    margin: 0 auto;
+    text-align: center;
+}
+
+.gc-faq-cta .gc-faq-eyebrow {
+    justify-content: center;
+    color: var(--blush-oat);
+}
+
+.gc-faq-cta .gc-faq-eyebrow::before {
+    background: var(--blush-oat);
+}
+
+.gc-faq-cta h2 {
+    margin: 0;
+    color: var(--milk);
+    font-size: clamp(
+        48px,
+        5vw,
+        70px
+    );
+    font-weight: 500;
+    line-height: 0.95;
+    letter-spacing: -3px;
+}
+
+.gc-faq-cta h2 span {
+    display: block;
+    color: var(--dusty-rose);
+    font-family: Georgia, serif;
+    font-style: italic;
+    font-weight: 400;
+}
+
+.gc-faq-cta-content > p:not(.gc-faq-eyebrow) {
+    max-width: 430px;
+    margin: 24px auto 32px;
+    color: rgba(
+        255,
+        246,
+        240,
+        0.68
+    );
+    font-size: 12px;
+    line-height: 1.8;
+}
+
+.gc-faq-contact {
+    display: inline-flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 25px;
+    min-width: 145px;
+    padding: 13px 16px;
+    border-radius: 10px;
+    background: var(--milk);
+    color: var(--espresso-brown);
+    font-size: 10px;
+    font-weight: 700;
+    text-decoration: none;
+    transition:
+        background 0.2s ease,
+        transform 0.2s ease;
+}
+
+.gc-faq-contact span {
+    font-size: 15px;
+}
+
+.gc-faq-contact:hover {
+    background: var(--blush-oat);
+    transform: translateY(-2px);
+}
+
+
+/* =========================================================
+   DECORATIVE CTA BLOB
+   ========================================================= */
+
+.gc-faq-cta::before {
+    content: "";
+    position: absolute;
+    width: 280px;
+    height: 280px;
+    left: -90px;
+    bottom: -130px;
+    background: var(--cocoa-taupe);
+    opacity: 0.25;
+    border-radius:
+        55% 45% 60% 40%
+        /
+        45% 55% 40% 60%;
+}
+
+.gc-faq-cta-number {
+    position: absolute;
+    right: 7%;
+    bottom: 35px;
+    color: rgba(
+        255,
+        246,
+        240,
+        0.08
+    );
+    font-family: Georgia, serif;
+    font-size: 100px;
+    line-height: 1;
+}
+
+
+/* =========================================================
+   TABLET
+   ========================================================= */
+
+@media (max-width: 1200px) {
+
+    .gc-faq-content {
+        width: 92%;
+    }
+
+    .gc-faq-content::before {
+        left: -25px;
+    }
+
+    .gc-faq-content::after {
+        right: -40px;
+    }
+}
+
+
+@media (max-width: 1000px) {
+
+    .gc-faq-hero {
+        min-height: 58vh;
+        padding: 75px 5%;
+    }
+
+    .gc-faq-hero-shape {
+        right: 5%;
+        width: 220px;
+        height: 240px;
+    }
+
+    .gc-faq-hero-shape span {
+        font-size: 90px;
+    }
+
+    .gc-faq-hero-number {
+        right: 5%;
+    }
+
+    .gc-faq-content {
+        width: 90%;
+        padding: 90px 0 110px;
+    }
+
+    .gc-faq-content::before,
+    .gc-faq-content::after {
+        display: none;
+    }
+
+    .gc-faq-section {
+        grid-template-columns:
+            240px minmax(0, 1fr);
+        gap: 55px;
+    }
+
+    .gc-faq-section-side h2 {
+        font-size: 32px;
+    }
+
+    .gc-faq-section-number {
+        font-size: 42px;
+    }
+}
+
+
+/* =========================================================
+   MOBILE
+   ========================================================= */
+
+@media (max-width: 700px) {
+
+    .gc-faq-hero {
+        min-height: 65vh;
+        padding: 65px 20px;
+        align-items: flex-start;
+    }
+
+    .gc-faq-hero h1 {
+        font-size: 52px;
+        letter-spacing: -3px;
+    }
+
+    .gc-faq-intro {
+        font-size: 12px;
+    }
+
+    .gc-faq-hero-shape {
+        width: 145px;
+        height: 155px;
+        right: 20px;
+        top: auto;
+        bottom: 35px;
+        transform: rotate(7deg);
+    }
+
+    .gc-faq-hero-shape::before {
+        inset: 12px;
+    }
+
+    .gc-faq-hero-shape span {
+        font-size: 60px;
+    }
+
+    .gc-faq-hero-number {
+        right: 20px;
+        bottom: 15px;
+        font-size: 45px;
+    }
+
+
+    /* Intro strip */
+
+    .gc-faq-intro-strip {
+        padding: 45px 20px;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 15px;
+    }
+
+    .gc-faq-intro-strip p {
+        font-size: 24px;
+    }
+
+    .gc-faq-intro-strip span {
+        text-align: left;
+        font-size: 10px;
+    }
+
+
+    /* FAQ content */
+
+    .gc-faq-content {
+        width: 90%;
+        padding: 70px 0 90px;
+    }
+
+    .gc-faq-section {
+        display: block;
+        padding: 55px 0;
+    }
+
+    .gc-faq-section-side {
+        margin-bottom: 30px;
+    }
+
+    .gc-faq-section-number {
+        margin-bottom: 14px;
+        font-size: 34px;
+    }
+
+    .gc-faq-section-side h2 {
+        max-width: none;
+        font-size: 30px;
+    }
+
+
+    /* Questions */
+
+    .gc-faq-question {
+        min-height: 78px;
+        padding: 18px 0;
+        gap: 15px;
+        font-size: 12px;
+    }
+
+    .gc-faq-question-text {
+        max-width: calc(100% - 50px);
+    }
+
+    .gc-faq-icon {
+        width: 36px;
+        height: 36px;
+        font-size: 16px;
+    }
+
+
+    /* Answers */
+
+    .gc-faq-answer p {
+        padding:
+            0 25px 25px 0;
+        font-size: 10px;
+    }
+
+
+    /* CTA */
+
+    .gc-faq-cta {
+        padding: 90px 20px;
+    }
+
+    .gc-faq-cta h2 {
+        font-size: 48px;
+    }
+
+    .gc-faq-cta-number {
+        right: 20px;
+        font-size: 65px;
+    }
+}
+
+/* =========================================================
+   GLOWCARE NEW SHOP PAGE
+   Unique classes - no conflict with old shop CSS
+========================================================= */
+
+.gc-shop-page {
+    width: 100%;
+    min-height: 100vh;
+    background: var(--warm-white);
+    overflow-x: hidden;
+}
+
+
+/* =========================================================
+   HERO
+========================================================= */
+
+.gc-shop-hero {
+    position: relative;
+
+    min-height: 58vh;
+
+    max-width: 1400px;
+
+    margin: 0 auto;
+
+    padding: 90px 7%;
+
+    display: flex;
+    align-items: center;
+
+    box-sizing: border-box;
+
+    border-bottom: 1px solid var(--light-border);
+
+    background:
+        radial-gradient(
+            circle at 82% 48%,
+            rgba(185, 143, 136, 0.14),
+            transparent 27%
+        );
+}
+
+.gc-shop-hero-content {
+    max-width: 850px;
+}
+
+.gc-shop-eyebrow {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+
+    margin: 0 0 20px;
+
+    color: var(--dusty-rose);
+
+    font-size: 9px;
+    font-weight: 700;
+
+    letter-spacing: 0.16em;
+}
+
+.gc-shop-eyebrow::before {
+    content: "";
+
+    width: 28px;
+    height: 1px;
+
+    background: var(--dusty-rose);
+}
+
+.gc-shop-hero h1 {
+    margin: 0;
+
+    color: var(--espresso-brown);
+
+    font-size: clamp(58px, 7vw, 94px);
+
+    font-weight: 500;
+
+    line-height: 0.94;
+
+    letter-spacing: -4px;
+}
+
+.gc-shop-hero h1 span {
+    display: block;
+
+    color: var(--dusty-rose);
+
+    font-family: Georgia, serif;
+
+    font-style: italic;
+
+    font-weight: 400;
+}
+
+.gc-shop-intro {
+    max-width: 520px;
+
+    margin: 30px 0 0;
+
+    color: var(--muted-text);
+
+    font-size: 13px;
+
+    line-height: 1.85;
+}
+
+.gc-shop-hero-number {
+    position: absolute;
+
+    right: 7%;
+    bottom: 55px;
+
+    color: var(--blush-oat);
+
+    font-family: Georgia, serif;
+
+    font-size: 90px;
+
+    line-height: 1;
+}
+
+
+/* =========================================================
+   CONTENT
+========================================================= */
+
+.gc-shop-content {
+    width: 100%;
+
+    max-width: 1280px;
+
+    margin: 0 auto;
+
+    padding: 55px 5% 120px;
+
+    box-sizing: border-box;
+}
+
+
+/* =========================================================
+   TOOLBAR
+========================================================= */
+
+.gc-shop-toolbar {
+    display: flex;
+
+    align-items: center;
+    justify-content: space-between;
+
+    gap: 25px;
+
+    margin-bottom: 42px;
+
+    padding-bottom: 20px;
+
+    border-bottom: 1px solid var(--light-border);
+}
+
+
+/* =========================================================
+   FILTERS
+========================================================= */
+
+.gc-shop-filters {
+    display: flex;
+
+    align-items: center;
+
+    gap: 8px;
+
+    flex-wrap: wrap;
+}
+
+.gc-shop-filter {
+    min-height: 36px;
+
+    padding: 0 15px;
+
+    border: 1px solid var(--light-border);
+
+    border-radius: 999px;
+
+    background: transparent;
+
+    color: var(--muted-text);
+
+    font-family: inherit;
+
+    font-size: 9px;
+
+    font-weight: 600;
+
+    cursor: pointer;
+
+    transition:
+        background 0.2s ease,
+        border-color 0.2s ease,
+        color 0.2s ease,
+        transform 0.2s ease;
+}
+
+.gc-shop-filter:hover {
+    border-color: var(--dusty-rose);
+
+    color: var(--espresso-brown);
+
+    transform: translateY(-1px);
+}
+
+.gc-shop-filter-active {
+    border-color: var(--espresso-brown);
+
+    background: var(--espresso-brown);
+
+    color: var(--milk);
+}
+
+
+/* =========================================================
+   PRODUCT COUNT
+========================================================= */
+
+.gc-shop-count {
+    flex-shrink: 0;
+
+    margin: 0;
+
+    color: var(--muted-text);
+
+    font-size: 9px;
+
+    letter-spacing: 0.08em;
+
+    text-transform: uppercase;
+}
+
+
+/* =========================================================
+   PRODUCT GRID
+========================================================= */
+
+.gc-shop-product-grid {
+    width: 100%;
+
+    display: grid;
+
+    grid-template-columns:
+        repeat(4, minmax(0, 1fr));
+
+    gap: 55px 20px;
+}
+
+.gc-shop-product-grid > * {
+    width: 100%;
+
+    min-width: 0;
+}
+
+
+/* =========================================================
+   EMPTY STATE
+========================================================= */
+
+.gc-shop-empty {
+    min-height: 400px;
+
+    display: flex;
+
+    flex-direction: column;
+
+    align-items: center;
+    justify-content: center;
+
+    padding: 40px;
+
+    box-sizing: border-box;
+
+    border: 1px solid var(--light-border);
+
+    border-radius: var(--radius-xl);
+
+    background: var(--milk);
+
+    text-align: center;
+}
+
+.gc-shop-empty h2 {
+    margin: 0;
+
+    color: var(--espresso-brown);
+
+    font-family: Georgia, serif;
+
+    font-size: 38px;
+
+    font-weight: 400;
+
+    line-height: 1;
+}
+
+.gc-shop-empty h2 span {
+    display: block;
+
+    color: var(--dusty-rose);
+
+    font-style: italic;
+}
+
+.gc-shop-empty button {
+    margin-top: 25px;
+
+    padding: 12px 17px;
+
+    border: none;
+
+    border-radius: 10px;
+
+    background: var(--espresso-brown);
+
+    color: var(--milk);
+
+    font-family: inherit;
+
+    font-size: 10px;
+
+    cursor: pointer;
+
+    transition:
+        background 0.2s ease,
+        transform 0.2s ease;
+}
+
+.gc-shop-empty button:hover {
+    background: var(--deep-espresso);
+
+    transform: translateY(-1px);
+}
+
+
+/* =========================================================
+   LOADING
+========================================================= */
+
+.gc-shop-loading {
+    min-height: 75vh;
+
+    display: flex;
+
+    flex-direction: column;
+
+    align-items: center;
+    justify-content: center;
+
+    text-align: center;
+}
+
+.gc-shop-loading h1 {
+    margin: 0;
+
+    color: var(--espresso-brown);
+
+    font-family: Georgia, serif;
+
+    font-size: 55px;
+
+    font-weight: 400;
+}
+
+.gc-shop-loading h1 span {
+    color: var(--dusty-rose);
+
+    font-style: italic;
+}
+
+
+/* =========================================================
+   TABLET
+========================================================= */
+
+@media (max-width: 1100px) {
+
+    .gc-shop-product-grid {
+        grid-template-columns:
+            repeat(3, minmax(0, 1fr));
+
+        gap: 45px 18px;
+    }
+}
+
+
+@media (max-width: 900px) {
+
+    .gc-shop-hero {
+        min-height: 52vh;
+
+        padding: 75px 5%;
+    }
+
+    .gc-shop-hero-number {
+        right: 5%;
+
+        bottom: 35px;
+
+        font-size: 65px;
+    }
+
+    .gc-shop-content {
+        padding: 45px 5% 90px;
+    }
+
+    .gc-shop-toolbar {
+        align-items: flex-start;
+
+        flex-direction: column;
+
+        margin-bottom: 35px;
+    }
+
+    .gc-shop-count {
+        align-self: flex-end;
+    }
+
+    .gc-shop-product-grid {
+        grid-template-columns:
+            repeat(2, minmax(0, 1fr));
+
+        gap: 40px 18px;
+    }
+}
+
+
+/* =========================================================
+   MOBILE
+========================================================= */
+
+@media (max-width: 600px) {
+
+    .gc-shop-hero {
+        min-height: 55vh;
+
+        padding: 60px 20px;
+    }
+
+    .gc-shop-hero h1 {
+        font-size: 52px;
+
+        letter-spacing: -3px;
+    }
+
+    .gc-shop-intro {
+        font-size: 12px;
+    }
+
+    .gc-shop-hero-number {
+        right: 20px;
+
+        font-size: 50px;
+    }
+
+    .gc-shop-content {
+        padding: 40px 20px 75px;
+    }
+
+    .gc-shop-filters {
+        width: 100%;
+
+        gap: 7px;
+    }
+
+    .gc-shop-filter {
+        min-height: 34px;
+
+        padding: 0 12px;
+
+        font-size: 8px;
+    }
+
+    .gc-shop-count {
+        align-self: flex-start;
+
+        margin-top: 4px;
+    }
+
+    .gc-shop-product-grid {
+        grid-template-columns: 1fr 1fr;
+
+        gap: 35px 12px;
+    }
+
+    .gc-shop-empty {
+        min-height: 300px;
+    }
+
+    .gc-shop-empty h2 {
+        font-size: 32px;
+    }
+}
+
+
+/* =========================================
+   GLOWCARE SHOP
+   Search + Filters + Sort
+   ========================================= */
+
+.gc-shop-page {
+    min-height: 100vh;
+    background: var(--milk);
+}
+
+.gc-shop-loading {
+    min-height: 70vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: var(--milk);
+}
+
+.gc-shop-eyebrow {
+    margin: 0 0 18px;
+    color: var(--dusty-rose);
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: .17em;
+    text-transform: uppercase;
+}
+
+/* HERO */
+
+.gc-shop-hero {
+    min-height: 430px;
+    padding: 80px 7%;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    box-sizing: border-box;
+    background: var(--blush-oat);
+}
+
+.gc-shop-hero-content {
+    max-width: 680px;
+}
+
+.gc-shop-hero h1 {
+    margin: 0;
+    color: var(--espresso-brown);
+    font-size: clamp(52px, 6vw, 82px);
+    line-height: .92;
+    letter-spacing: -4px;
+    font-weight: 500;
+}
+
+.gc-shop-hero h1 span {
+    display: block;
+    color: var(--dusty-rose);
+    font-family: Georgia, serif;
+    font-style: italic;
+    font-weight: 400;
+}
+
+.gc-shop-intro {
+    max-width: 480px;
+    margin: 25px 0 0;
+    color: var(--muted-text);
+    font-size: 13px;
+    line-height: 1.8;
+}
+
+.gc-shop-hero-number {
+    color: rgba(59, 47, 42, .18);
+    font-family: Georgia, serif;
+    font-size: 90px;
+    line-height: 1;
+}
+
+/* CONTENT */
+
+.gc-shop-content {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 70px 7% 120px;
+}
+
+/* TOPBAR */
+
+.gc-shop-topbar {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 30px;
+    align-items: center;
+    margin-bottom: 25px;
+}
+
+.gc-shop-search {
+    position: relative;
+    display: flex;
+    align-items: center;
+    height: 52px;
+    border: 1px solid var(--light-border);
+    border-radius: var(--radius-pill);
+    background: var(--white);
+}
+
+.gc-shop-search-icon {
+    margin-left: 20px;
+    color: var(--cocoa-taupe);
+    font-size: 20px;
+    line-height: 1;
+}
+
+.gc-shop-search input {
+    width: 100%;
+    height: 100%;
+    padding: 0 45px 0 13px;
+    border: none;
+    outline: none;
+    background: transparent;
+    color: var(--espresso-brown);
+    font-family: inherit;
+    font-size: 12px;
+}
+
+.gc-shop-search input::placeholder {
+    color: var(--muted-text);
+}
+
+.gc-shop-search-clear {
+    position: absolute;
+    right: 15px;
+    width: 28px;
+    height: 28px;
+    border: none;
+    border-radius: 50%;
+    background: var(--blush-oat);
+    color: var(--espresso-brown);
+    font-size: 17px;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.gc-shop-search-clear:hover {
+    background: var(--dusty-rose);
+    color: var(--milk);
+}
+
+/* SORT */
+
+.gc-shop-sort {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.gc-shop-sort > span {
+    color: var(--muted-text);
+    font-size: 8px;
+    font-weight: 700;
+    letter-spacing: .12em;
+    white-space: nowrap;
+}
+
+.gc-shop-sort select {
+    min-width: 175px;
+    height: 45px;
+    padding: 0 35px 0 15px;
+    border: 1px solid var(--light-border);
+    border-radius: var(--radius-pill);
+    outline: none;
+    background: var(--white);
+    color: var(--espresso-brown);
+    font-family: inherit;
+    font-size: 10px;
+    cursor: pointer;
+}
+
+/* CATEGORY TOOLBAR */
+
+.gc-shop-toolbar {
+    padding: 18px 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    border-top: 1px solid var(--light-border);
+    border-bottom: 1px solid var(--light-border);
+}
+
+.gc-shop-filters {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.gc-shop-filter {
+    padding: 10px 17px;
+    border: 1px solid var(--light-border);
+    border-radius: var(--radius-pill);
+    background: transparent;
+    color: var(--cocoa-taupe);
+    font-family: inherit;
+    font-size: 9px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all .25s ease;
+}
+
+.gc-shop-filter:hover {
+    border-color: var(--dusty-rose);
+    color: var(--dusty-rose);
+}
+
+.gc-shop-filter-active {
+    border-color: var(--espresso-brown);
+    background: var(--espresso-brown);
+    color: var(--milk);
+}
+
+.gc-shop-filter-active:hover {
+    background: var(--espresso-brown);
+    color: var(--milk);
+}
+
+.gc-shop-count {
+    margin: 0;
+    color: var(--muted-text);
+    font-size: 10px;
+    white-space: nowrap;
+}
+
+/* ADVANCED FILTERS */
+
+.gc-shop-advanced {
+    margin: 25px 0 50px;
+    padding: 25px;
+    display: grid;
+    grid-template-columns: 1.3fr 1fr auto auto;
+    gap: 35px;
+    align-items: center;
+    border: 1px solid var(--light-border);
+    border-radius: var(--radius-lg);
+    background: var(--white);
+}
+
+.gc-shop-filter-group {
+    min-width: 0;
+}
+
+.gc-shop-filter-heading {
+    margin-bottom: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.gc-shop-filter-heading span {
+    color: var(--muted-text);
+    font-size: 8px;
+    font-weight: 700;
+    letter-spacing: .13em;
+}
+
+.gc-shop-filter-heading strong {
+    color: var(--espresso-brown);
+    font-size: 10px;
+    font-weight: 600;
+}
+
+/* RANGE */
+
+.gc-shop-range {
+    width: 100%;
+    height: 4px;
+    margin: 8px 0;
+    appearance: none;
+    border-radius: 999px;
+    outline: none;
+    background: var(--blush-oat);
+    cursor: pointer;
+}
+
+.gc-shop-range::-webkit-slider-thumb {
+    width: 17px;
+    height: 17px;
+    appearance: none;
+    border: 3px solid var(--milk);
+    border-radius: 50%;
+    background: var(--dusty-rose);
+    box-shadow: 0 0 0 1px var(--dusty-rose);
+    cursor: pointer;
+}
+
+.gc-shop-range::-moz-range-thumb {
+    width: 13px;
+    height: 13px;
+    border: 3px solid var(--milk);
+    border-radius: 50%;
+    background: var(--dusty-rose);
+    box-shadow: 0 0 0 1px var(--dusty-rose);
+    cursor: pointer;
+}
+
+/* RATING */
+
+.gc-shop-rating-buttons {
+    display: flex;
+    gap: 5px;
+    flex-wrap: wrap;
+}
+
+.gc-shop-rating-buttons button {
+    height: 31px;
+    padding: 0 10px;
+    border: 1px solid var(--light-border);
+    border-radius: 7px;
+    background: transparent;
+    color: var(--cocoa-taupe);
+    font-family: inherit;
+    font-size: 8px;
+    cursor: pointer;
+    transition: all .2s ease;
+}
+
+.gc-shop-rating-buttons button:hover {
+    border-color: var(--dusty-rose);
+    color: var(--dusty-rose);
+}
+
+.gc-shop-rating-buttons button.active {
+    border-color: var(--dusty-rose);
+    background: var(--dusty-rose);
+    color: var(--milk);
+}
+
+/* STOCK */
+
+.gc-shop-stock {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    color: var(--cocoa-taupe);
+    font-size: 10px;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.gc-shop-stock input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.gc-shop-check {
+    width: 18px;
+    height: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--light-border);
+    border-radius: 5px;
+    color: transparent;
+    font-size: 10px;
+    font-weight: 700;
+    transition: all .2s ease;
+}
+
+.gc-shop-stock input:checked + .gc-shop-check {
+    border-color: var(--dusty-rose);
+    background: var(--dusty-rose);
+    color: var(--milk);
+}
+
+/* CLEAR */
+
+.gc-shop-clear {
+    padding: 0;
+    border: none;
+    border-bottom: 1px solid var(--muted-text);
+    background: transparent;
+    color: var(--muted-text);
+    font-family: inherit;
+    font-size: 9px;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.gc-shop-clear:hover {
+    color: var(--dusty-rose);
+    border-color: var(--dusty-rose);
+}
+
+/* PRODUCT GRID */
+
+.gc-shop-product-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 45px 20px;
+}
+
+/* EMPTY STATE */
+
+.gc-shop-empty {
+    min-height: 400px;
+    padding: 70px 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--light-border);
+    border-radius: var(--radius-xl);
+    text-align: center;
+}
+
+.gc-shop-empty h2 {
+    margin: 0;
+    color: var(--espresso-brown);
+    font-family: Georgia, serif;
+    font-size: clamp(38px, 4vw, 55px);
+    font-weight: 400;
+    line-height: .95;
+}
+
+.gc-shop-empty h2 span {
+    display: block;
+    color: var(--dusty-rose);
+    font-style: italic;
+}
+
+.gc-shop-empty-text {
+    max-width: 420px;
+    margin: 20px 0 28px;
+    color: var(--muted-text);
+    font-size: 12px;
+    line-height: 1.8;
+}
+
+.gc-shop-empty button {
+    padding: 12px 20px;
+    border: none;
+    border-radius: var(--radius-pill);
+    background: var(--espresso-brown);
+    color: var(--milk);
+    font-family: inherit;
+    font-size: 9px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all .25s ease;
+}
+
+.gc-shop-empty button:hover {
+    background: var(--dusty-rose);
+    transform: translateY(-2px);
+}
+
+/* =========================================
+   RESPONSIVE
+   ========================================= */
+
+@media (max-width: 1100px) {
+
+    .gc-shop-advanced {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .gc-shop-product-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 800px) {
+
+    .gc-shop-hero {
+        min-height: 380px;
+        padding: 70px 5%;
+    }
+
+    .gc-shop-hero-number {
+        font-size: 65px;
+    }
+
+    .gc-shop-content {
+        padding: 55px 5% 90px;
+    }
+
+    .gc-shop-topbar {
+        grid-template-columns: 1fr;
+        gap: 15px;
+    }
+
+    .gc-shop-sort {
+        justify-content: space-between;
+    }
+
+    .gc-shop-sort select {
+        flex: 1;
+    }
+
+    .gc-shop-toolbar {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .gc-shop-advanced {
+        grid-template-columns: 1fr;
+        gap: 25px;
+    }
+
+    .gc-shop-product-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 35px 15px;
+    }
+}
+
+@media (max-width: 550px) {
+
+    .gc-shop-hero {
+        min-height: 350px;
+        padding: 60px 20px;
+    }
+
+    .gc-shop-hero h1 {
+        font-size: 50px;
+        letter-spacing: -2px;
+    }
+
+    .gc-shop-hero-number {
+        display: none;
+    }
+
+    .gc-shop-content {
+        padding: 45px 20px 70px;
+    }
+
+    .gc-shop-search {
+        height: 48px;
+    }
+
+    .gc-shop-filters {
+        width: 100%;
+        overflow-x: auto;
+        flex-wrap: nowrap;
+        padding-bottom: 5px;
+    }
+
+    .gc-shop-filter {
+        flex-shrink: 0;
+    }
+
+    .gc-shop-advanced {
+        padding: 20px;
+    }
+
+    .gc-shop-product-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+@media (max-width: 400px) {
+
+    .gc-shop-product-grid {
+        grid-template-columns: 1fr;
+    }
 }
